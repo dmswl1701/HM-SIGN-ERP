@@ -459,6 +459,11 @@
   .cms-no{font-family:monospace; font-size:11.5px; font-weight:700; color:#A76D18; flex-shrink:0; width:24px;}
   .cms-row input{flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-size:13.5px; font-family:inherit;}
   .cms-row input:focus{outline:none; border-color:var(--navy);}
+  .cms-assets{display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px;}
+  .cms-asset{border:1px solid var(--border); border-radius:8px; overflow:hidden; background:#fff;}
+  .cms-asset img{display:block; width:100%; aspect-ratio:4/3; object-fit:cover;}
+  .cms-asset-ph{display:grid; place-items:center; aspect-ratio:4/3; background:#EEF1F6; color:var(--text-mute); font-size:11px;}
+  .cms-asset select,.cms-asset button{width:100%; border:0; border-top:1px solid var(--border); padding:6px; font-size:11.5px; font-family:inherit; background:#fff; cursor:pointer;}
   @media(max-width:760px){ .cms-row{flex-wrap:wrap} .cms-row input{flex:1 1 100%} }
   /* 사진 용도 체크 */
   .photo-use{display:flex; flex-wrap:wrap; gap:3px 8px; padding:6px 4px 2px; font-size:10.5px; color:var(--text-mute);}
@@ -921,7 +926,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V43.0807.0826';
+const APP_BUILD = 'V43.0807.0835';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -929,7 +934,7 @@ async function checkNewVersion(){
     const r = await fetch(location.pathname + '?v=' + Date.now(), {cache:'no-store'});
     if(!r.ok) return;
     const txt = await r.text();
-    const m = txt.match(new RegExp("const APP_BUILD = 'V43.0807.0826']+)'"));
+    const m = txt.match(new RegExp("const APP_BUILD = 'V43.0807.0835']+)'"));
     if(m && m[1] !== APP_BUILD){
       state.newVersion = m[1];
       showUpdateBar();
@@ -6463,7 +6468,9 @@ async function cmsFetchRaw(path, opts){
   const headers = Object.assign({
     'authorization':'Bearer '+cmsSession.access_token, 'accept':'application/json'
   }, opts.headers||{});
-  if(opts.body && !headers['content-type']) headers['content-type']='application/json';
+  // FormData 는 브라우저가 boundary 를 포함해 직접 설정해야 하므로 content-type 을 지정하지 않는다
+  const isForm = (typeof FormData!=='undefined') && (opts.body instanceof FormData);
+  if(opts.body && !isForm && !headers['content-type']) headers['content-type']='application/json';
   return fetch(CMS_API+path, {method:opts.method||'GET', headers, body:opts.body});
 }
 /* 어떤 콘텐츠 키가 실제로 존재하는지 확인 */
@@ -6560,6 +6567,12 @@ async function cmsLoadAll(){
       const r = await cmsFetchRaw(CMS_BASE+'/inquiries');
       if(r.status===200) cmsInquiries = await r.json();
     }catch(e){}
+    // 시공사례 + 사진
+    try{ await cmsLoadPortfolios(); }catch(e){}
+    // 사진첩이 아직 안 불러와졌으면 준비 (시공사례에서 바로 올릴 수 있도록)
+    if(state.gallery===null && !state.galleryLoading && typeof loadGallery==='function'){
+      state.galleryLoading=true; setTimeout(loadGallery, 10);
+    }
     state.cmsErr = null;
   }catch(e){
     state.cmsErr = e.message;
@@ -6611,6 +6624,137 @@ async function cmsSaveSite(){
     render();
   }
 }
+/* ---------- 시공사례(포트폴리오) ----------
+   Worker 라우트는 UUID 를 요구한다: PUT/DELETE /api/v1/cms/portfolios/{uuid}
+   목록 조회 전용 라우트는 없으므로 공개 API 의 featuredProjects 를 목록으로 사용한다. */
+let cmsPortfolios = null;   // [{id, title, category, region, summary, status, erpQuoteId}]
+let cmsAssets = {};         // portfolioId -> [{id, role, preview_url}]
+
+function cmsUuid(){
+  if(crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+async function cmsLoadPortfolios(){
+  try{
+    const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'}});
+    const j = r.ok ? await r.json() : {};
+    const list = Array.isArray(j.featuredProjects)? j.featuredProjects : [];
+    cmsPortfolios = list.map(p=>({
+      id: p.id || cmsUuid(),
+      title: p.title||'', category: p.category||'', region: p.region||'',
+      summary: p.summary||'', status: p.status||'published',
+      erpQuoteId: p.erpQuoteId||''
+    }));
+  }catch(e){ cmsPortfolios = cmsPortfolios || []; }
+  // 각 항목의 사진 목록
+  for(const p of (cmsPortfolios||[])){
+    try{
+      const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+p.id+'/assets');
+      if(r.status===200){
+        const j = await r.json();
+        cmsAssets[p.id] = Array.isArray(j) ? j : (Array.isArray(j.assets)? j.assets : []);
+      }
+    }catch(e){}
+  }
+}
+async function cmsSavePortfolio(id){
+  const p = (cmsPortfolios||[]).find(x=>x.id===id); if(!p) return;
+  if(!p.title.trim()){ toast('제목을 입력해 주세요','warn'); return; }
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+id, {
+      method:'PUT',
+      body: JSON.stringify({
+        title:p.title, category:p.category, region:p.region,
+        summary:p.summary, status:p.status||'published'
+      })
+    });
+    if(r.status>=200 && r.status<300){
+      toast('시공사례를 저장했어요','ok');
+      logActivity('홈페이지 시공사례 저장: '+p.title, '변경');
+      state.cmsErr=null;
+    }else{
+      let m=''; try{ m=(await r.text()).replace(/\s+/g,' ').slice(0,140); }catch(e){}
+      state.cmsErr = '시공사례 저장 실패 ('+r.status+') '+m;
+      toast('저장 실패','warn');
+    }
+  }catch(e){ state.cmsErr = '시공사례 저장 실패: '+e.message; }
+  render();
+}
+async function cmsDeletePortfolio(id){
+  const p = (cmsPortfolios||[]).find(x=>x.id===id); if(!p) return;
+  if(!confirm('「'+(p.title||'제목 없음')+'」을(를) 삭제할까요?\n\n등록된 사진도 함께 삭제됩니다.')) return;
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+id, {method:'DELETE'});
+    if(r.status>=200 && r.status<300){
+      cmsPortfolios = cmsPortfolios.filter(x=>x.id!==id);
+      delete cmsAssets[id];
+      toast('삭제했어요','ok');
+      logActivity('홈페이지 시공사례 삭제: '+p.title, '삭제');
+    }else{
+      let m=''; try{ m=(await r.text()).replace(/\s+/g,' ').slice(0,140); }catch(e){}
+      state.cmsErr = '삭제 실패 ('+r.status+') '+m;
+    }
+  }catch(e){ state.cmsErr='삭제 실패: '+e.message; }
+  render();
+}
+/* 사진 업로드 — 서버는 storage 버킷 portfolio 에 저장하고 role 로 분류한다 */
+async function cmsUploadAsset(portfolioId, file, role){
+  const fd = new FormData();
+  fd.append('file', file, file.name || 'photo.jpg');
+  fd.append('role', role||'gallery');
+  // content-type 은 브라우저가 boundary 와 함께 자동 설정해야 하므로 지정하지 않는다
+  const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets', {method:'POST', body:fd});
+  if(r.status>=200 && r.status<300) return await r.json().catch(()=>({}));
+  let m=''; try{ m=(await r.text()).replace(/\s+/g,' ').slice(0,160); }catch(e){}
+  throw new Error(r.status+' '+m);
+}
+async function cmsUploadFiles(portfolioId, files, role){
+  let ok=0; const fails=[];
+  for(const f of files){
+    try{ await cmsUploadAsset(portfolioId, f, role); ok++; }
+    catch(e){ fails.push((f.name||'사진')+' → '+e.message); }
+  }
+  if(ok) toast(ok+'장을 올렸어요','ok');
+  if(fails.length){
+    state.cmsErr = '사진 업로드 실패';
+    state.cmsSaveTried = fails;
+    toast('일부 사진 업로드 실패','warn');
+  }
+  // 목록 갱신
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets');
+    if(r.status===200){
+      const j = await r.json();
+      cmsAssets[portfolioId] = Array.isArray(j)? j : (Array.isArray(j.assets)? j.assets : []);
+    }
+  }catch(e){}
+  render();
+}
+/* dataURL → File (사진첩 사진을 그대로 업로드) */
+function cmsDataUrlToFile(dataUrl, name){
+  const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl||'');
+  if(!m) return null;
+  const bin = atob(m[2]);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new File([arr], name||'photo.jpg', {type:m[1]});
+}
+async function cmsAssetRole(portfolioId, assetId, role){
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets/'+assetId, {
+      method:'PATCH', body: JSON.stringify({role})
+    });
+    if(r.status>=200 && r.status<300){ toast('분류를 바꿨어요','ok'); }
+    else{
+      let m=''; try{ m=(await r.text()).slice(0,120); }catch(e){}
+      toast('변경 실패 ('+r.status+') '+m,'warn');
+    }
+  }catch(e){ toast('변경 실패: '+e.message,'warn'); }
+}
+
 /* ---------- 문의 목록 정규화 (Worker 응답 형식 차이 흡수) ---------- */
 function cmsInquiryList(){
   const d = cmsInquiries;
@@ -6853,24 +6997,82 @@ function renderWebsiteAdmin(){
   }
 
   if(tab==='portfolio'){
-    const list = Array.isArray(cmsData.featuredProjects)? cmsData.featuredProjects : [];
+    const list = Array.isArray(cmsPortfolios)? cmsPortfolios : [];
+    const sites = (state.quotes||[]).filter(q=>q.status==='시공완료' || q.status==='계약');
     body = `
     <div class="panel">
       <h2>시공사례 (${list.length})</h2>
-      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "시공사례" 페이지에 표시됩니다. 사진은 https 주소를 넣어주세요.</div>
-      ${list.map((p,i)=>`
-        <div class="panel" style="background:#FAFBFD;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <b style="color:var(--navy)">${String(i+1).padStart(2,'0')}</b>
-            <button type="button" class="aic-btn aic-btn-rej cmsPjDel" data-i="${i}">삭제</button>
+      <div class="aic-sub" style="margin:-8px 0 14px">
+        ERP 현장을 골라 시공사례로 등록하고, 사진첩 사진을 그대로 홈페이지에 올립니다.
+        사진은 <b>대표 / 시공전 / 시공후 / 갤러리</b>로 분류됩니다.
+      </div>
+      <div class="field">
+        <label>ERP 현장에서 가져오기</label>
+        <select id="cmsPjFromSite">
+          <option value="">-- 현장 선택 --</option>
+          ${sites.map(q=>`<option value="${esc(q.id)}">${esc(q.date)} · ${esc(q.client)} ${q.item?'· '+esc(q.item):''}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="aic-btn aic-btn-primary" id="cmsPjFromSiteAdd">＋ 이 현장을 시공사례로</button>
+        <button type="button" class="aic-btn" id="cmsPjAdd">＋ 빈 시공사례 추가</button>
+        <button type="button" class="aic-btn" id="cmsPjReload">↻ 목록 새로고침</button>
+      </div>
+    </div>
+
+    ${list.length? list.map((p,i)=>{
+      const assets = (cmsAssets[p.id]||[]);
+      return `
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">
+          <b style="color:var(--navy);font-size:15px">${esc(p.title||'(제목 없음)')}</b>
+          <span style="display:flex;gap:6px">
+            <button type="button" class="aic-btn cmsPjSave" data-id="${esc(p.id)}">💾 저장</button>
+            <button type="button" class="aic-btn aic-btn-rej cmsPjDel" data-id="${esc(p.id)}">삭제</button>
+          </span>
+        </div>
+        <div class="field"><label>제목</label><input type="text" class="cmsPj" data-id="${esc(p.id)}" data-f="title" value="${esc(p.title||'')}" placeholder="워시팡팡 셀프빨래방 ○○점"></div>
+        <div class="field"><label>분류</label><input type="text" class="cmsPj" data-id="${esc(p.id)}" data-f="category" value="${esc(p.category||'')}" placeholder="셀프빨래방"></div>
+        <div class="field"><label>지역</label><input type="text" class="cmsPj" data-id="${esc(p.id)}" data-f="region" value="${esc(p.region||'')}" placeholder="인천 중구"></div>
+        <div class="field"><label>설명</label><textarea class="cmsPj" data-id="${esc(p.id)}" data-f="summary" rows="2" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(p.summary||'')}</textarea></div>
+        <div class="field"><label>공개 상태</label>
+          <select class="cmsPj" data-id="${esc(p.id)}" data-f="status">
+            ${['draft','review','published'].map(s=>`<option value="${s}" ${(p.status||'draft')===s?'selected':''}>${s==='draft'?'작성중':s==='review'?'검토':'공개'}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="aic-docs">
+          <div class="aic-doc-head">📷 사진 (${assets.length})</div>
+          ${assets.length? `<div class="cms-assets">${assets.map(a=>`
+            <div class="cms-asset">
+              ${a.preview_url? `<img src="${esc(a.preview_url)}" alt="">` : '<div class="cms-asset-ph">미리보기 없음</div>'}
+              <select class="cmsAssetRole" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}">
+                ${[['cover','대표'],['before','시공전'],['after','시공후'],['gallery','갤러리']].map(([v,l])=>
+                  `<option value="${v}" ${a.role===v?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>`).join('')}</div>` : '<div class="aic-doc-empty">아직 사진이 없어요.</div>'}
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+            <label class="aic-btn aic-btn-primary" style="cursor:pointer">📤 사진 올리기
+              <input type="file" class="cmsAssetUp" data-id="${esc(p.id)}" accept="image/*" multiple style="display:none">
+            </label>
+            <select class="cmsAssetRolePick" data-id="${esc(p.id)}" style="padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12.5px">
+              <option value="gallery">갤러리로</option><option value="cover">대표로</option>
+              <option value="before">시공전으로</option><option value="after">시공후로</option>
+            </select>
+            <span style="font-size:11.5px;color:var(--text-mute)">사진첩에서 가져오려면 아래 목록에서 선택</span>
           </div>
-          <div class="field"><label>제목</label><input type="text" class="cmsPj" data-i="${i}" data-f="title" value="${esc(p.title||'')}" placeholder="워시팡팡 셀프빨래방"></div>
-          <div class="field"><label>분류</label><input type="text" class="cmsPj" data-i="${i}" data-f="category" value="${esc(p.category||'')}" placeholder="SELF LAUNDRY"></div>
-          <div class="field"><label>설명</label><input type="text" class="cmsPj" data-i="${i}" data-f="summary" value="${esc(p.summary||'')}" placeholder="1호점부터 이어진 다수 매장 시공"></div>
-          <div class="field"><label>대표 사진 주소</label><input type="text" class="cmsPj" data-i="${i}" data-f="coverImageUrl" value="${esc(p.coverImageUrl||'')}" placeholder="https://..."></div>
-        </div>`).join('') || '<div class="empty">등록된 시공사례가 없어요. 아래에서 추가하세요.</div>'}
-      <button type="button" class="aic-btn" id="cmsPjAdd">+ 시공사례 추가</button>
-    </div>`;
+          ${(()=>{
+            const g=(state.gallery||[]).find(x=>x.qid===p.erpQuoteId || (p.title||'').includes(x.title));
+            if(!g || !g.photos.length) return '';
+            return `<div class="cms-assets" style="margin-top:10px">${g.photos.slice(0,12).map((ph,pi)=>`
+              <div class="cms-asset">
+                <img src="${ph.d}" alt="">
+                <button type="button" class="aic-btn cmsAssetFromGal" data-id="${esc(p.id)}" data-key="${esc(g.key)}" data-i="${pi}" style="font-size:11px">이 사진 올리기</button>
+              </div>`).join('')}</div>`;
+          })()}
+        </div>
+      </div>`;}).join('')
+      : '<div class="panel"><div class="empty">등록된 시공사례가 없어요. 위에서 추가하세요.</div></div>'}`;
   }
 
   if(tab==='seo'){
@@ -7035,20 +7237,57 @@ function bindWebsiteAdmin(){
   const pa=document.getElementById('cmsPrcAdd');
   if(pa) pa.addEventListener('click', ()=>{ cmsData.process=cmsData.process||[]; cmsData.process.push(''); render(); });
 
-  // 포트폴리오
+  // 시공사례
   document.querySelectorAll('.cmsPj').forEach(el=> el.addEventListener('change', ()=>{
-    cmsData.featuredProjects[+el.dataset.i][el.dataset.f] = el.value;
+    const p=(cmsPortfolios||[]).find(x=>x.id===el.dataset.id);
+    if(p) p[el.dataset.f]=el.value;
   }));
-  document.querySelectorAll('.cmsPjDel').forEach(el=> el.addEventListener('click', ()=>{
-    if(!confirm('이 시공사례를 삭제할까요?')) return;
-    cmsData.featuredProjects.splice(+el.dataset.i,1); render();
-  }));
+  document.querySelectorAll('.cmsPjSave').forEach(el=> el.addEventListener('click', ()=> cmsSavePortfolio(el.dataset.id)));
+  document.querySelectorAll('.cmsPjDel').forEach(el=> el.addEventListener('click', ()=> cmsDeletePortfolio(el.dataset.id)));
   const ja=document.getElementById('cmsPjAdd');
   if(ja) ja.addEventListener('click', ()=>{
-    cmsData.featuredProjects=cmsData.featuredProjects||[];
-    cmsData.featuredProjects.push({title:'',category:'',summary:'',coverImageUrl:''});
+    cmsPortfolios = cmsPortfolios||[];
+    cmsPortfolios.unshift({id:cmsUuid(), title:'', category:'', region:'', summary:'', status:'draft', erpQuoteId:''});
     render();
   });
+  const jf=document.getElementById('cmsPjFromSiteAdd');
+  if(jf) jf.addEventListener('click', ()=>{
+    const sel=document.getElementById('cmsPjFromSite');
+    const qid=sel?sel.value:''; if(!qid){ toast('현장을 선택해 주세요','warn'); return; }
+    const q=(state.quotes||[]).find(x=>x.id===qid); if(!q) return;
+    cmsPortfolios = cmsPortfolios||[];
+    cmsPortfolios.unshift({
+      id:cmsUuid(), title:q.client+(q.item?' — '+q.item:''),
+      category:(typeof deriveChain==='function'? deriveChain(q.client):'')||'',
+      region:q.region||'', summary:'', status:'draft', erpQuoteId:q.id
+    });
+    toast('현장을 시공사례로 가져왔어요. 내용 확인 후 저장하세요','ok');
+    render();
+  });
+  const jr=document.getElementById('cmsPjReload');
+  if(jr) jr.addEventListener('click', async ()=>{ await cmsLoadPortfolios(); render(); });
+
+  // 사진 업로드
+  document.querySelectorAll('.cmsAssetUp').forEach(el=> el.addEventListener('change', async e=>{
+    const files=[...e.target.files]; if(!files.length) return;
+    const pid=el.dataset.id;
+    const pick=document.querySelector('.cmsAssetRolePick[data-id="'+pid+'"]');
+    await cmsUploadFiles(pid, files, pick?pick.value:'gallery');
+    e.target.value='';
+  }));
+  // 사진첩에서 바로 올리기
+  document.querySelectorAll('.cmsAssetFromGal').forEach(el=> el.addEventListener('click', async ()=>{
+    const g=(state.gallery||[]).find(x=>x.key===el.dataset.key); if(!g) return;
+    const ph=g.photos[+el.dataset.i]; if(!ph) return;
+    const f=cmsDataUrlToFile(ph.d, '시공사진.jpg');
+    if(!f){ toast('사진을 변환하지 못했어요','warn'); return; }
+    const pid=el.dataset.id;
+    const pick=document.querySelector('.cmsAssetRolePick[data-id="'+pid+'"]');
+    el.disabled=true; el.textContent='올리는 중...';
+    await cmsUploadFiles(pid, [f], pick?pick.value:'gallery');
+  }));
+  document.querySelectorAll('.cmsAssetRole').forEach(el=> el.addEventListener('change', ()=>
+    cmsAssetRole(el.dataset.pid, el.dataset.aid, el.value)));
 
   // 문의함
   document.querySelectorAll('.cmsInqAdd').forEach(el=> el.addEventListener('click', ()=> cmsInquiryToClient(+el.dataset.i)));
