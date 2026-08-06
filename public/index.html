@@ -6393,12 +6393,19 @@ async function cmsFetch(path, opts){
    200 이 오는 경로를 찾아 기억한다. (GET 만 사용 — 데이터를 바꾸지 않는다) */
 const CMS_SITE_PATHS = [
   '/api/v1/admin/site','/api/v1/admin/site-content','/api/v1/admin/content',
-  '/api/v1/admin/settings','/api/v1/admin/config','/api/v1/admin',
-  '/api/admin/site','/admin/api/site','/api/v1/site'
+  '/api/v1/admin/settings','/api/v1/admin/config','/api/v1/admin/site_content',
+  '/api/v1/admin/siteContent','/api/v1/admin/cms','/api/v1/admin/page',
+  '/api/v1/admin/pages','/api/v1/admin/home','/api/v1/admin/data',
+  '/api/v1/admin','/api/v1/admin/',
+  '/api/v1/site','/api/v1/content','/api/v1/settings',
+  '/api/admin/site','/api/admin/content','/admin/api/site',
+  '/admin/site','/api/site','/api/v1/public/site'
 ];
 const CMS_INQ_PATHS = [
   '/api/v1/admin/inquiries','/api/v1/admin/inquiry','/api/v1/admin/contacts',
-  '/api/v1/admin/leads','/api/admin/inquiries','/api/v1/inquiries'
+  '/api/v1/admin/leads','/api/v1/admin/messages','/api/v1/admin/requests',
+  '/api/v1/admin/submissions','/api/v1/admin/enquiries',
+  '/api/v1/inquiries','/api/admin/inquiries','/admin/inquiries','/api/inquiries'
 ];
 function cmsPathCache(){
   try{ return JSON.parse(localStorage.getItem('hmCmsPaths')||'{}'); }catch(e){ return {}; }
@@ -6409,14 +6416,20 @@ function cmsSavePath(kind, path){
 }
 async function cmsProbe(paths){
   const results = [];
+  let found = null;
   for(const p of paths){
     try{
       const r = await cmsFetchRaw(p);
-      results.push({path:p, status:r.status});
-      if(r.status===200) return {found:p, results};
-    }catch(e){ results.push({path:p, status:'ERR'}); }
+      let note = '';
+      // 404 가 아닌 응답은 본문 일부를 남긴다 — 실제 라우트 힌트가 들어있는 경우가 많다
+      if(r.status !== 404){
+        try{ note = (await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){}
+      }
+      results.push({path:p, status:r.status, note});
+      if(r.status===200 && !found) found = p;   // 끝까지 훑어 전체 그림을 남긴다
+    }catch(e){ results.push({path:p, status:'ERR', note:e.message.slice(0,60)}); }
   }
-  return {found:null, results};
+  return {found, results};
 }
 /* 상태코드까지 보기 위한 저수준 호출 (토큰 갱신은 동일하게 처리) */
 async function cmsFetchRaw(path, opts){
@@ -6851,7 +6864,8 @@ function renderWebsiteAdmin(){
         <div style="margin-bottom:12px">
           <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:6px">${label}
             ${res.found? `<span class="aic-badge done">찾음: ${esc(res.found)}</span>` : `<span class="aic-badge rej">못 찾음</span>`}</div>
-          <pre class="aic-doc-body" style="max-height:150px">${esc(res.results.map(x=>x.status+'  '+x.path).join('\n'))}</pre>
+          <pre class="aic-doc-body" style="max-height:220px">${esc(res.results.map(x=>
+            x.status+'  '+x.path + (x.note? '\n        └ '+x.note : '')).join('\n'))}</pre>
         </div>`;
       return `<div class="panel">
         <h2>🔎 API 진단 결과</h2>
