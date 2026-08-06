@@ -6227,15 +6227,78 @@ function cmsExpired(){
   return !cmsSession || !cmsSession.expires_at || cmsSession.expires_at*1000 <= Date.now()+30000;
 }
 
-/* ---------- Supabase Auth ---------- */
+/* ---------- Supabase Auth ----------
+   무료 플랜은 메일 템플릿을 수정할 수 없어 기본 "매직 링크"만 발송된다.
+   따라서 링크가 ERP 주소로 돌아오게 하고(redirect_to), 돌아온 URL에서 토큰을 읽어 로그인한다.
+   나중에 커스텀 SMTP를 붙여 6자리 코드를 보내게 되면 아래 cmsVerifyCode 가 그대로 쓰인다. */
+function cmsRedirectUrl(){
+  // 해시·쿼리를 제거한 현재 페이지 주소 (file:// 로 열었을 땐 운영 주소로 대체)
+  const u = location.origin + location.pathname;
+  return /^https?:/.test(u) ? u : 'https://hm-sign-erp.dmswl1701.workers.dev/';
+}
 async function cmsSendCode(email){
-  const r = await fetch(sbUrl()+'/auth/v1/otp', {
+  const r = await fetch(sbUrl()+'/auth/v1/otp?redirect_to='+encodeURIComponent(cmsRedirectUrl()), {
     method:'POST',
     headers:{'apikey':sbKey(),'content-type':'application/json'},
     body: JSON.stringify({email, create_user:true})
   });
   if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,160)); }
   return true;
+}
+/* 메일 링크를 눌러 ERP로 돌아왔을 때 URL에서 세션을 회수한다.
+   Supabase 는 상황에 따라 두 가지 형태로 돌려보낸다.
+     ① #access_token=...&refresh_token=...   (implicit)
+     ② ?token_hash=...&type=magiclink        (PKCE)  */
+async function cmsCaptureAuthFromUrl(){
+  try{
+    const hash = new URLSearchParams((location.hash||'').replace(/^#/,''));
+    const qs   = new URLSearchParams(location.search||'');
+    const clean = ()=>{ try{ history.replaceState(null,'',location.origin+location.pathname); }catch(e){} };
+
+    // 오류가 실려 돌아온 경우 (만료된 링크 등)
+    const err = hash.get('error_description') || qs.get('error_description');
+    if(err){
+      state.cmsErr = '메일 링크 오류: ' + decodeURIComponent(err).replace(/\+/g,' ')
+        + ' — 링크는 한 번만, 그리고 짧은 시간 안에 사용해야 합니다. 다시 요청해 주세요.';
+      state.view='website'; clean(); return true;
+    }
+    // ① implicit
+    const at = hash.get('access_token');
+    if(at){
+      cmsSaveSession({
+        access_token: at,
+        refresh_token: hash.get('refresh_token')||'',
+        expires_at: Math.floor(Date.now()/1000) + (parseInt(hash.get('expires_in'))||3600),
+        email: state.cmsEmail||''
+      });
+      // 이메일 확인
+      try{
+        const u = await fetch(sbUrl()+'/auth/v1/user',{headers:{apikey:sbKey(),authorization:'Bearer '+at}});
+        if(u.ok){ const j=await u.json(); if(j.email){ cmsSession.email=j.email; cmsSaveSession(cmsSession); } }
+      }catch(e){}
+      state.view='website'; state.cmsErr=null; state.cmsCodeSent=false; cmsData=null;
+      clean(); toast('로그인했어요','ok'); return true;
+    }
+    // ② PKCE (token_hash)
+    const th = qs.get('token_hash') || hash.get('token_hash');
+    if(th){
+      const type = qs.get('type') || hash.get('type') || 'magiclink';
+      const r = await fetch(sbUrl()+'/auth/v1/verify',{
+        method:'POST', headers:{apikey:sbKey(),'content-type':'application/json'},
+        body: JSON.stringify({token_hash:th, type})
+      });
+      const j = await r.json();
+      if(r.ok && j.access_token){
+        cmsSaveSession({access_token:j.access_token, refresh_token:j.refresh_token,
+          expires_at:j.expires_at, email:(j.user&&j.user.email)||state.cmsEmail||''});
+        state.view='website'; state.cmsErr=null; state.cmsCodeSent=false; cmsData=null;
+        clean(); toast('로그인했어요','ok'); return true;
+      }
+      state.cmsErr = '링크 인증 실패: ' + (j.error_description||j.msg||j.error||'알 수 없는 오류');
+      state.view='website'; clean(); return true;
+    }
+  }catch(e){ /* URL 파싱 실패는 무시 */ }
+  return false;
 }
 async function cmsVerifyCode(email, token){
   const r = await fetch(sbUrl()+'/auth/v1/verify', {
@@ -6432,23 +6495,31 @@ function renderWebsiteAdmin(){
       <div class="aic-sub">ERP에서 홈페이지 내용을 직접 수정합니다. GitHub 파일을 건드리지 않습니다.</div>
       <div class="panel" style="max-width:520px">
         <h2>관리자 로그인</h2>
-        <div class="aic-sub" style="margin:-8px 0 14px">등록된 관리자 이메일로 인증번호를 보냅니다.</div>
+        <div class="aic-sub" style="margin:-8px 0 14px">등록된 관리자 이메일로 <b>로그인 링크</b>를 보냅니다.</div>
         <div class="field">
           <label>관리자 이메일</label>
           <input type="email" id="cmsEmail" placeholder="dmswl1701@gmail.com" value="${esc(state.cmsEmail||'')}" autocomplete="email">
         </div>
         ${state.cmsCodeSent ? `
-        <div class="field">
-          <label>이메일로 받은 6자리 인증번호</label>
-          <input type="text" id="cmsCode" placeholder="000000" inputmode="numeric" maxlength="8">
+        <div class="aic-dm-ok" style="font-size:12.5px;line-height:1.75">
+          📩 <b>${esc(state.cmsEmail||'')}</b> 로 메일을 보냈습니다.<br>
+          메일 속 <b>Sign in</b> 링크를 누르시면 이 화면으로 돌아와 자동으로 로그인됩니다.
+          <div style="margin-top:8px;color:#7A4E0E">· 링크는 <b>한 번만</b>, 그리고 <b>몇 분 안에</b> 눌러야 합니다.<br>
+          · 메일이 안 보이면 스팸함을 확인해 주세요.<br>
+          · <b>같은 브라우저</b>에서 열어야 로그인이 유지됩니다.</div>
         </div>
-        <div class="aic-dm-ok" style="font-size:12px">메일이 안 보이면 스팸함을 확인해 주세요. 링크가 아니라 <b>숫자 코드</b>를 입력하시면 됩니다.</div>
         <div class="modal-actions" style="position:static;border:0;padding-top:14px">
-          <button type="button" class="btn secondary" id="cmsResend">코드 다시 받기</button>
+          <button type="button" class="btn secondary" id="cmsResend">메일 다시 보내기</button>
+        </div>
+        <details style="margin-top:12px">
+          <summary style="font-size:12.5px;color:var(--text-mute);cursor:pointer;font-weight:400;list-style:revert">숫자 인증번호를 받으신 경우 여기를 눌러 입력</summary>
+          <div class="field" style="margin-top:10px">
+            <input type="text" id="cmsCode" placeholder="000000" inputmode="numeric" maxlength="8">
+          </div>
           <button type="button" class="btn" id="cmsVerifyBtn">인증하고 로그인</button>
-        </div>` : `
+        </details>` : `
         <div class="modal-actions" style="position:static;border:0;padding-top:6px">
-          <button type="button" class="btn" id="cmsSendBtn">인증번호 받기</button>
+          <button type="button" class="btn" id="cmsSendBtn">로그인 링크 받기</button>
         </div>`}
         ${state.cmsErr? `<div class="aic-dm-warn" style="margin-top:12px">${esc(state.cmsErr)}</div>`:''}
       </div>`;
@@ -9733,6 +9804,13 @@ document.addEventListener('visibilitychange', ()=>{   // 화면 복귀 시 끊�
 
 /* 데이터가 늦어도 화면은 즉시 보이게 */
 try{ ensureStateDefaults(); render(); }catch(e){ console.warn('initial render', e&&e.message); }
+
+/* 홈페이지 관리 — 메일 링크로 돌아온 경우 URL에서 로그인 세션을 회수 */
+try{
+  if(/access_token=|token_hash=|error_description=/.test(location.hash + location.search)){
+    cmsCaptureAuthFromUrl().then(ok=>{ if(ok) render(); }).catch(()=>{});
+  }
+}catch(e){ console.warn('cms auth capture', e&&e.message); }
 
 loadData().catch(err=>{
   console.error('초기 로딩 실패', err);
