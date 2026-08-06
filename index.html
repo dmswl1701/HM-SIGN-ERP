@@ -318,6 +318,168 @@
   #imgShare .isHint{color:#FFE9BF; font-size:13px; margin-bottom:10px;}
   #imgShare img{max-width:100%; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,.4); -webkit-touch-callout:default;}
   @media (max-width:760px){ #imgShare .isBtn{padding:12px 14px;} }
+
+  /* ===== AI 회사 (AI 직원 대시보드) ===== */
+  .aic-sub{font-size:12.5px; color:var(--text-mute); margin:-14px 0 18px;}
+  .aic-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(258px,1fr)); gap:16px; margin-bottom:20px;}
+  .aic-card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; transition:box-shadow .35s ease;}
+  .aic-card::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--border); transition:background .5s ease;}
+  .aic-card.aic-working::before{background:var(--amber);}
+  .aic-card.aic-working{box-shadow:0 6px 20px rgba(31,56,100,.09);}
+  .aic-card-top{display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .aic-avatar{width:40px; height:40px; border-radius:11px; background:var(--amber-bg); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;}
+  .aic-name{font-size:14.5px; font-weight:700; color:var(--navy);}
+  .aic-badge{margin-left:auto; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:11px; white-space:nowrap; background:#EEF1F7; color:#5A6478;}
+  .aic-badge.auto{background:var(--green-bg); color:var(--green);}
+  .aic-badge.wait{background:var(--amber-bg); color:#8A5A0E;}
+  .aic-badge.done{background:var(--green-bg); color:var(--green);}
+  .aic-badge.idle{background:#EEF1F7; color:#5A6478;}
+  .aic-btns{display:flex; gap:6px; margin-top:12px;}
+  .aic-btn{flex:1; padding:7px 6px; border:1px solid var(--border); background:#fff; border-radius:7px; font-size:11.5px; font-weight:700; color:var(--navy); cursor:pointer;}
+  .aic-btn:hover{background:var(--bg);}
+  .aic-btn:disabled{opacity:.4; cursor:default;}
+  .aic-btn.aic-btn-primary{background:var(--amber); border-color:var(--amber); color:#fff;}
+  .aic-btn.aic-btn-primary:hover{background:#B06F19;}
+  .aic-status{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-mute); margin-top:2px;}
+  .aic-dot{width:8px; height:8px; border-radius:50%; background:#B7C0CE; display:inline-block; flex-shrink:0;}
+  .aic-dot.working{background:var(--green); animation:aicPulse 1.7s ease-in-out infinite;}
+  .aic-dot.idle{background:#B7C0CE;}
+  .aic-dot.done{background:var(--amber); animation:aicPop .5s ease;}
+  @keyframes aicPulse{
+    0%{box-shadow:0 0 0 0 rgba(31,122,77,.45);}
+    70%{box-shadow:0 0 0 7px rgba(31,122,77,0);}
+    100%{box-shadow:0 0 0 0 rgba(31,122,77,0);}
+  }
+  @keyframes aicPop{
+    0%{transform:scale(.5); opacity:.3;}
+    60%{transform:scale(1.35);}
+    100%{transform:scale(1); opacity:1;}
+  }
+  .aic-row{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:5px 0; border-bottom:1px dashed #EEF1F6;}
+  .aic-row:last-of-type{border-bottom:none;}
+  .aic-label{color:var(--text-mute); flex-shrink:0;}
+  .aic-val{color:var(--text); font-weight:600; text-align:right;}
+  .aic-val.aic-muted{color:var(--text-mute); font-weight:400;}
+  .aic-progress{display:flex; align-items:center; gap:8px; margin:9px 0;}
+  .aic-bar-track{flex:1; height:6px; background:#EEF1F6; border-radius:4px; overflow:hidden;}
+  .aic-bar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--navy),var(--amber)); border-radius:4px; transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+  .aic-pct{font-size:11.5px; font-weight:700; color:var(--navy); width:34px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .aic-time{font-size:10.5px; color:#9AA4B5; margin-top:10px; text-align:right;}
+  .aic-log-panel{max-height:360px; display:flex; flex-direction:column;}
+  .aic-log-list{overflow-y:auto; flex:1;}
+  .aic-log-item{display:flex; align-items:center; gap:10px; padding:7px 4px; font-size:12.5px; border-bottom:1px solid #F3F5F8;}
+  .aic-log-item:last-child{border-bottom:none;}
+  .aic-log-time{font-family:monospace; color:var(--text-mute); font-size:11px; width:38px; flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .aic-log-icon{flex-shrink:0;}
+  .aic-log-name{font-weight:700; color:var(--navy); flex-shrink:0; white-space:nowrap;}
+  .aic-log-text{color:var(--text); flex:1;}
+  .aic-log-new{animation:aicLogIn .45s ease;}
+  @keyframes aicLogIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .aic-log-text a{color:var(--navy); font-weight:600; text-decoration:none; border-bottom:1px dotted var(--navy);}
+  .aic-log-text a:hover{color:var(--amber); border-bottom-color:var(--amber);}
+
+  /* 요약 스트립 */
+  .aic-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:18px;}
+  .aic-stat{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:13px 16px;}
+  .aic-stat.hot{border-color:var(--amber); background:var(--amber-bg);}
+  .aic-stat-v{font-size:21px; font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums;}
+  .aic-stat.hot .aic-stat-v{color:#8A5A0E;}
+  .aic-stat-l{font-size:11.5px; color:var(--text-mute); margin-top:3px;}
+
+  /* 결과물 목록 (카드 내부) */
+  .aic-docs{margin-top:12px; padding-top:12px; border-top:1px solid var(--border);}
+  .aic-doc-head{font-size:11.5px; font-weight:700; color:var(--text-mute); margin-bottom:7px;}
+  .aic-doc-empty{font-size:11.5px; color:var(--text-mute); line-height:1.6;}
+  .aic-doc{display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:7px; cursor:pointer; font-size:12px; transition:background .2s ease; animation:aicDocIn .45s ease;}
+  .aic-doc:hover{background:var(--bg);}
+  .aic-doc.pending{background:#FEF8EC;}
+  .aic-doc.pending:hover{background:#FBF1E1;}
+  @keyframes aicDocIn{ from{opacity:0; transform:translateX(-6px);} to{opacity:1; transform:translateX(0);} }
+  .aic-doc-ic{flex-shrink:0;}
+  .aic-doc-name{flex:1; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}
+  .aic-doc-ver{font-size:10px; font-weight:700; color:var(--amber); background:var(--amber-bg); padding:1px 6px; border-radius:8px; flex-shrink:0;}
+  .aic-doc-time{font-size:10.5px; color:#9AA4B5; flex-shrink:0;}
+  .aic-doc-team{font-size:11.5px; color:var(--text-mute); flex-shrink:0;}
+  .aic-doc-act{font-size:11px; font-weight:700; color:#8A5A0E; background:var(--amber-bg); padding:2px 8px; border-radius:9px; flex-shrink:0;}
+
+  /* 승인 대기 패널 */
+  .aic-pend{display:flex; align-items:center; gap:9px; padding:10px 4px; border-bottom:1px solid #F3F5F8; flex-wrap:wrap;}
+  .aic-pend:last-child{border-bottom:none;}
+  .aic-pend-btns{display:flex; gap:6px; margin-left:auto;}
+  .aic-pend-btns .aic-btn{flex:none; padding:6px 11px;}
+
+  /* 보관함 */
+  .aic-folder{margin-bottom:14px;}
+  .aic-folder:last-child{margin-bottom:0;}
+  .aic-folder-name{font-family:monospace; font-size:12px; font-weight:700; color:var(--navy); margin-bottom:7px;}
+  .aic-folder-n{font-family:inherit; font-size:10.5px; color:var(--text-mute); background:var(--bg); padding:1px 7px; border-radius:8px; margin-left:4px;}
+  .aic-folder-files{display:flex; flex-wrap:wrap; gap:6px;}
+  .aic-file{font-size:12px; padding:5px 11px; background:#fff; border:1px solid var(--border); border-radius:14px; cursor:pointer; color:var(--text); transition:all .2s ease;}
+  .aic-file:hover{border-color:var(--navy); color:var(--navy); background:var(--bg);}
+
+  /* 결과물 뷰어 */
+  .aic-doc-modal{width:760px; max-width:100%;}
+  .aic-dm-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .aic-dm-meta{font-size:11.5px; color:var(--text-mute); margin-top:5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .aic-vers{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .aic-ver{padding:5px 13px; border:1px solid var(--border); background:#fff; border-radius:14px; font-size:11.5px; font-weight:700; color:var(--text-mute); cursor:pointer; font-family:inherit;}
+  .aic-ver:hover{border-color:var(--navy); color:var(--navy);}
+  .aic-ver.on{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .aic-ver-note{font-size:11.5px; color:var(--text-mute); margin-bottom:10px;}
+  .aic-doc-body{background:#FAFBFD; border:1px solid var(--border); border-radius:9px; padding:18px 20px; font-family:"Malgun Gothic","Apple SD Gothic Neo",monospace; font-size:12.5px; line-height:1.85; color:var(--text); white-space:pre-wrap; word-break:break-word; max-height:52vh; overflow-y:auto; margin-bottom:14px;}
+  .aic-dm-warn{background:var(--amber-bg); border:1px solid #E9CE9C; color:#7A4E0E; border-radius:8px; padding:11px 14px; font-size:12.5px; line-height:1.6;}
+  .aic-dm-ok{background:var(--green-bg); border:1px solid #B8DDC7; color:var(--green); border-radius:8px; padding:11px 14px; font-size:12.5px; line-height:1.6;}
+  .aic-badge.rej{background:var(--red-bg); color:var(--red);}
+  .aic-btn.aic-btn-rej{background:#fff; border-color:#E3B5AC; color:var(--red);}
+  .aic-btn.aic-btn-rej:hover{background:var(--red-bg);}
+  .btn.aic-btn-rej{background:#fff; border:1px solid #E3B5AC; color:var(--red);}
+  .btn.aic-btn-rej:hover{background:var(--red-bg);}
+
+  /* 업무 히스토리 */
+  .aic-hist{margin-top:14px; padding:14px 16px; background:#FAFBFD; border:1px solid var(--border); border-radius:9px;}
+  .aic-hist-h{font-size:11.5px; font-weight:700; color:var(--text-mute); margin-bottom:9px;}
+  .aic-hist-i{display:flex; align-items:flex-start; gap:9px; font-size:12px; padding:4px 0; color:var(--text); line-height:1.6;}
+  .aic-hist-t{font-family:monospace; color:var(--text-mute); font-size:11px; flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .aic-hist-k{flex-shrink:0;}
+
+  /* 대표비서 브리핑 */
+  .aic-brief{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px;}
+  .aic-brief-h{font-size:12px; font-weight:700; color:var(--navy); margin-bottom:9px; padding-bottom:7px; border-bottom:1.5px solid var(--border);}
+  .aic-brief-i{display:flex; align-items:center; gap:6px; font-size:12px; padding:5px 6px; border-radius:6px; color:var(--text); line-height:1.5;}
+  .aic-brief-i[data-doc]{cursor:pointer;}
+  .aic-brief-i[data-doc]:hover{background:var(--bg);}
+  .aic-brief-m{margin-left:auto; font-size:10.5px; color:var(--text-mute); flex-shrink:0;}
+  .aic-brief-e{font-size:12px; color:var(--text-mute); padding:5px 6px;}
+  /* 홈페이지 관리 */
+  .cms-row{display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid #F0F2F6;}
+  .cms-row:last-of-type{border-bottom:none;}
+  .cms-no{font-family:monospace; font-size:11.5px; font-weight:700; color:#A76D18; flex-shrink:0; width:24px;}
+  .cms-row input{flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-size:13.5px; font-family:inherit;}
+  .cms-row input:focus{outline:none; border-color:var(--navy);}
+  @media(max-width:760px){ .cms-row{flex-wrap:wrap} .cms-row input{flex:1 1 100%} }
+  /* 사진 용도 체크 */
+  .photo-use{display:flex; flex-wrap:wrap; gap:3px 8px; padding:6px 4px 2px; font-size:10.5px; color:var(--text-mute);}
+  .photo-use label{display:flex; align-items:center; gap:3px; cursor:pointer; white-space:nowrap;}
+  .photo-use input{width:13px; height:13px; margin:0; cursor:pointer;}
+
+  /* 업무 보드 */
+  .aic-board{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;}
+  .aic-bcol{background:#FAFBFD; border:1px solid var(--border); border-radius:10px; padding:11px;}
+  .aic-bhead{font-size:11.5px; font-weight:700; color:var(--navy); margin-bottom:9px; display:flex; align-items:center; gap:5px;}
+  .aic-tcard{background:#fff; border:1px solid var(--border); border-radius:8px; padding:9px 10px; margin-bottom:7px; font-size:12px; animation:aicDocIn .4s ease;}
+  .aic-tcard.aicTaskCard{cursor:pointer;}
+  .aic-tcard.aicTaskCard:hover{border-color:var(--navy);}
+  .aic-tt{color:var(--text); font-weight:600; line-height:1.5;}
+  .aic-tm{color:var(--text-mute); font-size:10.5px; margin-top:4px;}
+  @media (max-width:760px){ .aic-board{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:760px){
+    .aic-grid{grid-template-columns:1fr;}
+    .aic-log-panel{max-height:280px;}
+    .aic-stats{grid-template-columns:repeat(2,1fr);}
+    .aic-pend-btns{margin-left:0; width:100%;}
+    .aic-pend-btns .aic-btn{flex:1;}
+    .aic-doc-body{max-height:44vh; padding:14px;}
+  }
 </style>
 </head>
 <body>
@@ -337,7 +499,8 @@
 </div>
 
 <script>
-const SEED = [{"date": "2026-03-09", "client": "올인베이커리 성북석관동점", "region": "서울 성북", "category": "베이커리 체인", "item": "간판 외(천갈이·채널·돌출·시트)", "amount": 4100000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "5400 * 1000", "qty": 6, "unit": "회배", "price": 60000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "ea", "price": 220000, "remark": "", "group": "선택"}, {"name": "측면간판 천갈이", "spec": "4600 * 1000", "qty": 5, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "후면 유리시트", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-03-12", "client": "이음베이커리", "region": "미확인", "category": "베이커리", "item": "간판 외(프레임·채널·어닝·돌출)", "amount": 5150000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 4, "unit": "ea", "price": 60000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 프레임", "spec": "3550 * 1400", "qty": 5, "unit": "회배", "price": 90000, "remark": "", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 6, "unit": "ea", "price": 200000, "remark": "이음베이커리", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 7, "unit": "ea", "price": 100000, "remark": "샌드위치&커피", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 300000, "remark": "마크", "group": "선택"}, {"name": "어닝", "spec": "3550", "qty": 1, "unit": "식", "price": 700000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}, {"name": "후면 문 시트", "spec": "", "qty": 1, "unit": "식", "price": 40000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-04-03", "client": "올인베이커리 은계번영점", "region": "경기 시흥", "category": "베이커리 체인", "item": "간판 외(프레임·채널·돌출·실사)", "amount": 3840000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 프레임", "spec": "3800 * 1100", "qty": 5, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1500000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "전면 상단 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "후면 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-04-03", "client": "올인베이커리 은계번영점", "region": "경기 시흥", "category": "베이커리 체인", "item": "간판 외(프레임·채널·돌출·실사)", "amount": 4350000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 프레임", "spec": "3800 * 1100", "qty": 5, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "전면 상단 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "후면 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-04-25", "client": "올인베이커리 일산마두점", "region": "경기 고양", "category": "베이커리 체인", "item": "간판 외(천갈이·채널·돌출)", "amount": 3900000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "ea", "price": 200000, "remark": "", "group": "선택"}, {"name": "후면 유리시트", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-06", "client": "올인베이커리 여주 창동점", "region": "경기 여주", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·조명/비조명 2안)", "amount": 4050000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 300000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "1200 * 1100", "qty": 3, "unit": "회배", "price": 120000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1000000, "remark": "", "group": "선택"}, {"name": "조명간판 1", "spec": "1580 * 2530", "qty": 4, "unit": "회배", "price": 150000, "remark": "", "group": "선택"}, {"name": "조명간판 2", "spec": "1080 * 2530", "qty": 3, "unit": "회배", "price": 150000, "remark": "", "group": "선택"}, {"name": "에어간판 천갈이", "spec": "H : 3000", "qty": 1, "unit": "식", "price": 120000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-11", "client": "올인베이커리 세종 고운점", "region": "세종", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·어닝 등 13개 항목)", "amount": 5430000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "3470 * 1400", "qty": 5, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1500000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "1000 * 1000", "qty": 1, "unit": "식", "price": 400000, "remark": "조명", "group": "선택"}, {"name": "좌측 기둥 실사", "spec": "500 * 3800", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "우측 기둥 실사", "spec": "220 * 3000", "qty": 1, "unit": "식", "price": 30000, "remark": "", "group": "선택"}, {"name": "우측 기둥 실사2", "spec": "1000 * 3800", "qty": 1, "unit": "식", "price": 150000, "remark": "", "group": "선택"}, {"name": "복도 실사", "spec": "580 * 580", "qty": 4, "unit": "ea", "price": 15000, "remark": "", "group": "선택"}, {"name": "에어간판", "spec": "", "qty": 1, "unit": "식", "price": 300000, "remark": "", "group": "선택"}, {"name": "뒷면 현수막", "spec": "4000 * 4000", "qty": 1, "unit": "식", "price": 320000, "remark": "줄미싱", "group": "선택"}, {"name": "어닝 신규", "spec": "3450 * 2000", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "E/L 표찰", "spec": "", "qty": 1, "unit": "식", "price": 30000, "remark": "", "group": "선택"}, {"name": "복도 간판", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-11", "client": "세종 고운동 스터디카페", "region": "세종", "category": "스터디카페", "item": "썬팅 외(썬팅실사 54회배·돌출 천갈이)", "amount": 1880000, "status": "견적발송", "lines": [{"name": "썬팅 실사", "spec": "4.5 * 3 * 4", "qty": 54, "unit": "회배", "price": 20000, "remark": "", "group": "선택"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "3.5ton", "qty": 1, "unit": "대", "price": 400000, "remark": "", "group": "선택"}, {"name": "돌출간판 천갈이", "spec": "", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-12", "client": "올인베이커리 괴산점", "region": "충북 괴산", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·어닝천갈이)", "amount": 3640000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1150", "qty": 5, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "ea", "price": 200000, "remark": "", "group": "선택"}, {"name": "기둥실사 1", "spec": "350 * 2200", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "기둥실사 2", "spec": "370 * 2200", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "어닝천갈이", "spec": "", "qty": 1, "unit": "식", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-12", "client": "올인베이커리 괴산점", "region": "충북 괴산", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·어닝천갈이)", "amount": 4150000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1150", "qty": 5, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1700000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "ea", "price": 200000, "remark": "", "group": "선택"}, {"name": "기둥실사 1", "spec": "350 * 2200", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "기둥실사 2", "spec": "370 * 2200", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "어닝천갈이", "spec": "", "qty": 1, "unit": "식", "price": 330000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-15", "client": "올인베이커리 이천 갈산점", "region": "경기 이천", "category": "베이커리 체인", "item": "간판 외(공통품목+선택 2개안)", "amount": 1040000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}]}, {"date": "2026-05-18", "client": "올인베이커리 이천 갈산점", "region": "경기 이천", "category": "베이커리 체인", "item": "간판 외(바타입 채널 6000·돌출)", "amount": 3640000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면 바타입 채널 간판", "spec": "6000", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "주차장 썬팅+엘리베이터 실사", "spec": "", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-18", "client": "올인베이커리 용인 모현점", "region": "경기 용인", "category": "베이커리 체인", "item": "간판 외(뒷판 7회배·채널·어닝)", "amount": 4660000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "A2", "qty": 8, "unit": "ea", "price": 15000, "remark": "실사", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "3600 * 1800", "qty": 7, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1700000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "상단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "하단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "전면 돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-21", "client": "올인베이커리 수원 구운점", "region": "경기 수원", "category": "베이커리 체인", "item": "천갈이·형광등 교체 위주(리뉴얼)", "amount": 2874000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 80000, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-21", "client": "올인베이커리 전주 인후동점", "region": "전북 전주", "category": "베이커리 체인", "item": "간판 외(뒷판 9회배·채널·돌출/기둥 천갈이)", "amount": 4560000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "5000 * 1700", "qty": 9, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판 천갈이", "spec": "800 * 4000 * 2", "qty": 8, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출간판 형광등", "spec": "", "qty": 20, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "기둥간판 천갈이", "spec": "500 * 3100", "qty": 2, "unit": "회배", "price": 80000, "remark": "", "group": "선택"}, {"name": "기둥간판 형광등", "spec": "", "qty": 6, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-07-03", "client": "올인베이커리 강화점", "region": "인천 강화", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·기둥실사)", "amount": 4270000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 220000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "3700 * 1450", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1600000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "기둥실사", "spec": "", "qty": 1, "unit": "식", "price": 150000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 400000, "remark": "", "group": "선택"}], "exact": true}, {"date": "2026-05-21", "client": "올인베이커리 전주 인후동점", "region": "전북 전주", "category": "베이커리 체인", "item": "간판 외(천갈이·형광등·돌출/기둥)", "amount": 3360000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 253200, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-28", "client": "올인베이커리 안성 죽산면점", "region": "경기 안성", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·전광판·시트)", "amount": 5530000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4500 * 1500", "qty": 7, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1630000, "remark": "", "group": "선택"}, {"name": "LED 전광판", "spec": "", "qty": 1, "unit": "식", "price": 1200000, "remark": "", "group": "선택"}, {"name": "전면 유리 시트 추가", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "실사기준", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-22", "client": "올인베이커리 전주 안골점", "region": "전북 전주", "category": "베이커리 체인", "item": "간판 외(천갈이·형광등·돌출/기둥)", "amount": 3900000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 285200, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-28", "client": "올인베이커리 안성 죽산면점", "region": "경기 안성", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·전광판·시트)", "amount": 6030000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4500 * 1500", "qty": 7, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 2130000, "remark": "", "group": "선택"}, {"name": "LED 전광판", "spec": "", "qty": 1, "unit": "식", "price": 1200000, "remark": "", "group": "선택"}, {"name": "전면 유리 시트 추가", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "실사기준", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-28", "client": "올인베이커리 용인 수지진산점", "region": "경기 용인", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·어닝·포맥스)", "amount": 4360000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1810000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}]}, {"date": "2026-05-27", "client": "올인베이커리 수원 구운점", "region": "경기 수원", "category": "베이커리 체인", "item": "리뉴얼(천갈이·형광등갈이 위주)", "amount": 2594000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 110000, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-04-26", "client": "올인베이커리 한양대 에리카점", "region": "경기 안산", "category": "베이커리 체인", "item": "간판 외(갈바간판 신규·채널·기둥·어닝)", "amount": 5240000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "갈바간판 신규제작", "spec": "4000 * 1200", "qty": 1, "unit": "식", "price": 1800000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 970000, "remark": "", "group": "선택"}, {"name": "기둥간판 실사", "spec": "500 * 3000", "qty": 1, "unit": "식", "price": 150000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-04-27", "client": "올인베이커리 한양대 에리카점", "region": "경기 안산", "category": "베이커리 체인", "item": "간판 외(갈바간판 신규·채널·기둥·어닝)", "amount": 5700000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "갈바간판 신규제작", "spec": "4000 * 1200", "qty": 1, "unit": "식", "price": 1800000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1430000, "remark": "", "group": "선택"}, {"name": "기둥간판 실사", "spec": "500 * 3000", "qty": 1, "unit": "식", "price": 150000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-04-27", "client": "올인베이커리 일산 백마역점", "region": "경기 고양", "category": "베이커리 체인", "item": "간판 외(천갈이·형광등갈이·돌출)", "amount": 2960000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 183200, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-04-27", "client": "올인베이커리 일산 백마역점", "region": "경기 고양", "category": "베이커리 체인", "item": "간판 외(천갈이·형광등갈이·돌출)", "amount": 2660000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1100", "qty": 5, "unit": "회배", "price": 123200, "remark": "", "group": "선택"}, {"name": "전면간판 형광등갈이", "spec": "", "qty": 18, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "돌출 천갈이", "spec": "800 * 2000", "qty": 4, "unit": "회배", "price": 60000, "remark": "", "group": "선택"}, {"name": "돌출 형광등", "spec": "", "qty": 8, "unit": "ea", "price": 8000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-04-29", "client": "올인베이커리 노원동일점", "region": "서울 노원", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출+후면형광등/어닝)", "amount": 4049000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1229000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "후면 형광등", "spec": "", "qty": 10, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}]}, {"date": "2026-04-29", "client": "올인베이커리 노원동일점", "region": "서울 노원", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출+후면형광등/어닝)", "amount": 4550000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1730000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "후면 형광등", "spec": "", "qty": 10, "unit": "ea", "price": 10000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 여주 창동점", "region": "경기 여주", "category": "베이커리 체인", "item": "간판 외(천갈이·실사·기둥간판)", "amount": 2790000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 천갈이", "spec": "3400 * 1200", "qty": 5, "unit": "회배", "price": 150000, "remark": "", "group": "선택"}, {"name": "전면 상단 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "후면 실사", "spec": "", "qty": 1, "unit": "식", "price": 200000, "remark": "", "group": "선택"}, {"name": "기둥간판", "spec": "500 * 3000", "qty": 1, "unit": "식", "price": 300000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 수원 구운점", "region": "경기 수원", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·포맥스)", "amount": 3414000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 40000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 150000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1624000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 수원 구운점", "region": "경기 수원", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·포맥스·스카이)", "amount": 3714000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1244000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 용인 모현점", "region": "경기 용인", "category": "베이커리 체인", "item": "간판 외(뒷판·채널 양면·어닝·실사)", "amount": 5060000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 1560000, "remark": "", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 800000, "remark": "후면", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "상단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "하단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 수원 구운점", "region": "경기 수원", "category": "베이커리 체인", "item": "간판 외(뒷판·채널·돌출·포맥스)", "amount": 4214000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 2044000, "remark": "", "group": "선택"}, {"name": "돌출간판", "spec": "600파이 원형", "qty": 1, "unit": "식", "price": 220000, "remark": "", "group": "선택"}, {"name": "기둥실사+포맥스", "spec": "390 * 2400", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "선택"}]}, {"date": "2026-05-15", "client": "올인베이커리 용인 모현점", "region": "경기 용인", "category": "베이커리 체인", "item": "간판 외(뒷판·채널 양면·어닝·실사·스카이)", "amount": 5880000, "status": "견적발송", "lines": [{"name": "실내사인물", "spec": "1000 * 550", "qty": 8, "unit": "ea", "price": 50000, "remark": "액자", "group": "공통"}, {"name": "키오스크.입금", "spec": "A4", "qty": 2, "unit": "ea", "price": 10000, "remark": "", "group": "공통"}, {"name": "전면 유리 시트", "spec": "", "qty": 1, "unit": "ea", "price": 200000, "remark": "실사기준", "group": "공통"}, {"name": "출입문 시트", "spec": "", "qty": 1, "unit": "ea", "price": 20000, "remark": "", "group": "공통"}, {"name": "오픈현수막", "spec": "", "qty": 1, "unit": "ea", "price": 30000, "remark": "", "group": "공통"}, {"name": "배너 입간판", "spec": "", "qty": 1, "unit": "ea", "price": 40000, "remark": "", "group": "공통"}, {"name": "신메뉴 개폐식액자", "spec": "A3", "qty": 1, "unit": "ea", "price": 60000, "remark": "", "group": "공통"}, {"name": "인건비", "spec": "", "qty": 2, "unit": "인", "price": 300000, "remark": "", "group": "공통"}, {"name": "간판 타이머", "spec": "", "qty": 1, "unit": "ea", "price": 50000, "remark": "", "group": "공통"}, {"name": "전면간판 뒷판", "spec": "4000 * 1500", "qty": 6, "unit": "회배", "price": 80000, "remark": "비조명", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 2080000, "remark": "", "group": "선택"}, {"name": "전면간판 채널", "spec": "", "qty": 1, "unit": "식", "price": 800000, "remark": "후면", "group": "선택"}, {"name": "어닝", "spec": "", "qty": 1, "unit": "식", "price": 600000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "상단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "후면 실사 썬팅", "spec": "하단", "qty": 1, "unit": "식", "price": 100000, "remark": "", "group": "선택"}, {"name": "스카이", "spec": "", "qty": 1, "unit": "대", "price": 300000, "remark": "", "group": "선택"}]}];
+const SEED = [];
+const SEED_BACKUP = {"quotes":[{"id":"q_1785403673364","date":"2026-07-30","item":"간판 외","qnum":"HM-20260730-002","lines":[{"qty":"12","name":"전면간판(플렉스)","spec":"m²","unit":"회배","group":"공통","price":"140000","remark":""},{"qty":"6","name":"측면간판(플렉스)","spec":"m²","unit":"회배","group":"공통","price":"140000","remark":""},{"qty":"2","name":"인건비","spec":"","unit":"인","group":"공통","price":"150000","remark":""},{"qty":1,"name":"스카이","spec":"","unit":"","group":"공통","price":"0300000","remark":""},{"qty":1,"name":"기존 간판 철거","spec":"","unit":"","group":"선택","price":"100000","remark":""},{"qty":1,"name":"기존 썬팅 철거","spec":"","unit":"","group":"선택","price":"0100000","remark":""}],"amount":3320000,"client":"휴대폰 할인점","region":"인천","status":"시공완료","category":""},{"id":"q_1785410319582","date":"2026-07-30","item":"간판 외","qnum":"HM-20260730-003","lines":[{"qty":"4","name":"채널","spec":"800각","unit":"글자","price":"250000","remark":""},{"qty":"5","name":"채널","spec":"600각","unit":"글자","group":"공통","price":"200000","remark":""},{"qty":"2","name":"smps","spec":"300w","unit":"","group":"공통","price":"50000","remark":""},{"qty":"2","name":"인건비","spec":"","unit":"인","group":"공통","price":"150000","remark":""},{"qty":1,"name":"스카이","spec":"","unit":"","group":"공통","price":"300000","remark":""},{"qty":1,"name":"기존 간판 철거","spec":"","unit":"","group":"선택","price":"100000","remark":""},{"qty":1,"name":"기존 썬팅 철거","spec":"","unit":"","group":"선택","price":"100000","remark":""},{"qty":1,"name":"기존 벽면 및 간판 재조립","spec":"","unit":"","group":"선택","price":"300000","remark":""}],"amount":3200000,"client":"휴대폰 할인점","region":"인천","status":"미성사","category":""}],"clients":[{"id":"c_0","memo":"","name":"올인베이커리 성북석관동점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"성북석관동점","mobile":"","address":"서울 성북","contact":"","discount":0},{"id":"c_1","memo":"","name":"이음베이커리","chain":"이음베이커리","email":"","phone":"","terms":"","branch":"이음베이커리","mobile":"","address":"미확인","contact":"","discount":0},{"id":"c_2","memo":"","name":"올인베이커리 은계번영점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"은계번영점","mobile":"","address":"경기 시흥","contact":"","discount":0},{"id":"c_3","memo":"","name":"올인베이커리 일산마두점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"일산마두점","mobile":"","address":"경기 고양","contact":"","discount":0},{"id":"c_4","memo":"","name":"올인베이커리 여주 창동점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"여주 창동점","mobile":"","address":"경기 여주","contact":"","discount":0},{"id":"c_5","memo":"","name":"올인베이커리 세종 고운점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"세종 고운점","mobile":"","address":"세종","contact":"","discount":0},{"id":"c_6","memo":"","name":"세종 고운동 스터디카페","chain":"","email":"","phone":"","terms":"","branch":"세종 고운동 스터디카페","mobile":"","address":"세종","contact":"","discount":0},{"id":"c_7","memo":"","name":"올인베이커리 괴산점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"괴산점","mobile":"","address":"충북 괴산","contact":"","discount":0},{"id":"c_8","memo":"","name":"올인베이커리 이천 갈산점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"이천 갈산점","mobile":"","address":"경기 이천","contact":"","discount":0},{"id":"c_9","memo":"","name":"올인베이커리 용인 모현점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"용인 모현점","mobile":"","address":"경기 용인","contact":"","discount":0},{"id":"c_10","memo":"","name":"올인베이커리 수원 구운점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"수원 구운점","mobile":"","address":"경기 수원","contact":"","discount":0},{"id":"c_11","memo":"","name":"올인베이커리 전주 인후동점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"전주 인후동점","mobile":"","address":"전북 전주","contact":"","discount":0},{"id":"c_12","memo":"","name":"올인베이커리 강화점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"강화점","mobile":"","address":"인천 강화","contact":"","discount":0},{"id":"c_13","memo":"","name":"올인베이커리 안성 죽산면점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"안성 죽산면점","mobile":"","address":"경기 안성","contact":"","discount":0},{"id":"c_14","memo":"","name":"올인베이커리 전주 안골점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"전주 안골점","mobile":"","address":"전북 전주","contact":"","discount":0},{"id":"c_15","memo":"","name":"올인베이커리 용인 수지진산점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"용인 수지진산점","mobile":"","address":"경기 용인","contact":"","discount":0},{"id":"c_16","memo":"","name":"올인베이커리 한양대 에리카점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"한양대 에리카점","mobile":"","address":"경기 안산","contact":"","discount":0},{"id":"c_17","memo":"","name":"올인베이커리 일산 백마역점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"일산 백마역점","mobile":"","address":"경기 고양","contact":"","discount":0},{"id":"c_18","memo":"","name":"올인베이커리 노원동일점","chain":"올인베이커리","email":"","phone":"","terms":"","branch":"노원동일점","mobile":"","address":"서울 노원","contact":"","discount":0},{"id":"c_1785402113802","lat":null,"lng":null,"dong":"","memo":"","name":"위시팡팡 셀프빨래방 워시팡팡 부평 장제로점","sido":"","type":"고객사","chain":"위시팡팡 셀프빨래방","email":"","phone":"","terms":"","branch":"워시팡팡 부평 장제로점","mobile":"","address":"인천 부평","contact":"","sigungu":"","discount":0,"zonecode":""},{"id":"c_1785403673361","memo":"","name":"휴대폰 할인점","chain":"","email":"","phone":"","terms":"","branch":"휴대폰 할인점","mobile":"","address":"인천","contact":"","discount":0}],"items":[{"id":"it_0","cat":"아크릴","cost":30000,"name":"실내사인물","spec":"1000*550","unit":"ea","price":50000},{"id":"it_1","cat":"아크릴","cost":6000,"name":"키오스크.입금 사인","spec":"A4","unit":"ea","price":10000},{"id":"it_2","cat":"시트","cost":120000,"name":"전면 유리 시트","spec":"실사기준","unit":"식","price":200000},{"id":"it_3","cat":"시트","cost":12000,"name":"출입문 시트","spec":"","unit":"ea","price":20000},{"id":"it_4","cat":"현수막","cost":18000,"name":"오픈 현수막","spec":"","unit":"ea","price":30000},{"id":"it_5","cat":"기타","cost":24000,"name":"배너 입간판","spec":"","unit":"ea","price":40000},{"id":"it_6","cat":"아크릴","cost":36000,"name":"신메뉴 개폐식 액자","spec":"A3","unit":"ea","price":60000},{"id":"it_7","cat":"시공비","cost":0,"name":"인건비","spec":"","unit":"인","price":150000},{"id":"it_8","cat":"기타","cost":30000,"name":"간판 타이머","spec":"","unit":"ea","price":50000},{"id":"it_9","cat":"갈바","cost":48000,"name":"전면간판 뒷판(회배)","spec":"","unit":"회배","price":80000},{"id":"it_10","cat":"LED","cost":0,"name":"전면간판 채널","spec":"","unit":"식","price":1600000},{"id":"it_11","cat":"LED","cost":0,"name":"돌출간판","spec":"600파이 원형","unit":"ea","price":200000},{"id":"it_12","cat":"후렉스","cost":48000,"name":"전면간판 천갈이","spec":"","unit":"회배","price":80000},{"id":"it_13","cat":"LED","cost":0,"name":"전면간판 형광등갈이","spec":"","unit":"ea","price":10000},{"id":"it_14","cat":"기타","cost":0,"name":"어닝","spec":"","unit":"식","price":600000},{"id":"it_15","cat":"포맥스","cost":0,"name":"기둥실사+포맥스","spec":"","unit":"ea","price":50000},{"id":"it_16","cat":"출장비","cost":0,"name":"스카이차","spec":"3.5ton","unit":"회","price":300000},{"id":"it_17","cat":"갈바","cost":120000,"name":"갈바간판 신규","spec":"","unit":"회배","price":200000}],"jobs":{"q_1785403673364":{"memo":"","site":"","step":"시공완료","jobNo":"W-20260730-002","manager":"","installDate":""},"q_1785410319582":{"memo":"","site":"","step":"시공완료","jobNo":"W-20260730-003","manager":"","installDate":""}},"mfg":{},"install":{"q_1785403673364":{"memo":"","driver":"","vehicle":"","doneDate":"","doneTime":"14:19","photoCount":0},"q_1785410319582":{"memo":"","driver":"","vehicle":"","doneDate":"","doneTime":"14:19","photoCount":0}},"payments":{},"asList":[],"workJobs":[]};
 
 
 /* ===== 저장소 어댑터 =====
@@ -400,10 +563,10 @@ const store = {
 
 /* ===== 회사 정보 (설정에서 수정 가능) ===== */
 const DEFAULT_COMPANY = {
-  name:'에이치엠(HM)인테리어', ceo:'', bizNo:'',
-  addr:'',
+  name:'에이치엠(HM)인테리어', ceo:'신아민', bizNo:'276-15-01497',
+  addr:'인천 중구 도원로 8번길 46 104호',
   biztype:'전문, 과학 및 기술서비스업', bizitem:'옥외 및 전시 광고업',
-  tel:'', bank:''
+  tel:'010-5251-6413', bank:'신한은행 신아민 110-441-060487'
 };
 function getCompany(){ return {...DEFAULT_COMPANY, ...(state.company||{})}; }
 
@@ -441,7 +604,8 @@ function quoteTotal(q){ const b=linesTotal(q); return b + Math.round(b*0.1); }
 function readHeaderFromDOM(){
   const g=id=>{const el=document.getElementById(id); return el? el.value : undefined;};
   const h = state.draftHeader || {};
-  const map={date:'f_date', clientName:'f_client_input', region:'f_region', item:'f_item'};
+  const map={date:'f_date', clientName:'f_client_input', region:'f_region', item:'f_item',
+             lat:'fq_lat', lng:'fq_lng', zonecode:'fq_zonecode', sido:'fq_sido', sigungu:'fq_sigungu', dong:'fq_dong'};
   for(const k in map){ const v=g(map[k]); if(v!==undefined) h[k]=v; }
   state.draftHeader = h;
 }
@@ -449,8 +613,10 @@ function initHeader(editing){
   state.draftHeader = editing ? {
     date: editing.date||todayStr(),
     clientName: editing.client||'',
-    region: editing.region||'', item: editing.item||''
-  } : { date: todayStr(), clientName:'', region:'', item:'' };
+    region: editing.region||'', item: editing.item||'',
+    lat: editing.lat||'', lng: editing.lng||'',
+    zonecode: editing.zonecode||'', sido: editing.sido||'', sigungu: editing.sigungu||'', dong: editing.dong||''
+  } : { date: todayStr(), clientName:'', region:'', item:'', lat:'', lng:'', zonecode:'', sido:'', sigungu:'', dong:'' };
 }
 /* 재렌더 후 입력창 포커스/커서 복원 */
 let _focusTarget=null;
@@ -521,7 +687,8 @@ function collectPayload(){
     workJobs:state.workJobs||[],
     projects:state.projects||{}, notice:state.notice||null, company:state.company||null,
     activity:state.activity||[],
-    notices:state.notices||[], downloads:state.downloads||[], events:state.events||[], homeBanner:state.homeBanner||null, routeDone:state.routeDone||{}, routeExtra:state.routeExtra||{}, navConf:state.navConf||null, mapKey:state.mapKey||'', geoCache:state.geoCache||{}, lastBackup:state.lastBackup||null, hideTips:!!state.hideTips
+    notices:state.notices||[], downloads:state.downloads||[], events:state.events||[], homeBanner:state.homeBanner||null, routeDone:state.routeDone||{}, routeExtra:state.routeExtra||{}, navConf:state.navConf||null, mapKey:state.mapKey||'', geoCache:state.geoCache||{}, lastBackup:state.lastBackup||null, hideTips:!!state.hideTips,
+    aiDocs:state.aiDocs||[], photoUse:state.photoUse||{}
   };
 }
 async function applyPayload(d){
@@ -544,6 +711,8 @@ async function applyPayload(d){
   if(d.hideTips!==undefined){ state.hideTips=!!d.hideTips; await store.set('hideTips', state.hideTips); }
   if(d.routeDone && typeof d.routeDone==='object'){ state.routeDone=d.routeDone; await store.set('routeDone', state.routeDone); }
   if(d.routeExtra && typeof d.routeExtra==='object'){ state.routeExtra=d.routeExtra; await store.set('routeExtra', state.routeExtra); }
+  if(Array.isArray(d.aiDocs)){ state.aiDocs=d.aiDocs; await store.set('aiDocs', state.aiDocs); }
+  if(d.photoUse && typeof d.photoUse==='object'){ state.photoUse=d.photoUse; await store.set('photoUse', state.photoUse); }
   if(d.company) state.company=d.company;
   await store.set('quotes',state.quotes); await store.set('clients',state.clients);
   await store.set('items',state.items); await store.set('payments',state.payments);
@@ -778,6 +947,9 @@ function showUpdateBar(){
 
 const NAV = [
   {id:'home', label:'HOME', icon:'⌂', ready:true},
+  {id:'aicompany', label:'AI 회사', icon:'🤖', ready:true},
+  {id:'airesults', label:'AI 결과물', icon:'📂', ready:true},
+  {id:'website', label:'홈페이지 관리', icon:'🌐', ready:true},
   {id:'notices', label:'공지사항', icon:'📢', ready:true},
   {id:'quotes', label:'견적관리', icon:'📄', ready:true},
   {id:'clients', label:'거래처관리', icon:'🏢', ready:true},
@@ -826,7 +998,35 @@ function todayStr(){   // 현지(한국) 날짜 기준 — UTC로 계산하면 �
 function uid(p){ return (p||'id')+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
 function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
 
+// 가족 실시간 공유(Supabase) 기본 연결값 — 배포마다 재입력 없이 자동 연결
+// (Publishable 키는 브라우저 노출용이라 삽입 OK. Secret 키는 절대 넣지 않음)
+const CLOUD_DEFAULT = {
+  url: 'https://ndjxdwsvgoxzzrszsycj.supabase.co',
+  key: 'sb_publishable_UsTuMFMRui94itbBw9cs7Q_nv0GBPlL',
+  ws:  'hm-sign'
+};
 async function loadData(){
+  // ── 최초 실행(빈 저장소)이면 백업 데이터로 1회 시드 ──
+  try{
+    let __seeded=false;
+    try{ __seeded = await store.get('__seededHM'); }catch(e){ __seeded=false; }
+    let __existing=null;
+    try{ __existing = await store.get('quotes'); }catch(e){ __existing=null; }
+    if(!__seeded && (!__existing || !__existing.length)){
+      const B = SEED_BACKUP;
+      await store.set('quotes', B.quotes||[]);
+      await store.set('clients', B.clients||[]);
+      await store.set('items', B.items||[]);
+      await store.set('jobs', B.jobs||{});
+      await store.set('mfg', B.mfg||{});
+      await store.set('install', B.install||{});
+      await store.set('payments', B.payments||{});
+      await store.set('aslist', B.asList||[]);
+      await store.set('workJobs', B.workJobs||[]);
+      await store.set('__seededHM', true);
+      console.log('[시드] 백업 데이터로 초기화 완료 (견적 '+(B.quotes||[]).length+' · 거래처 '+(B.clients||[]).length+')');
+    }
+  }catch(e){ console.warn('seed-backup', e); }
   try{
     state.quotes = await store.get('quotes');
   }catch(e){
@@ -887,6 +1087,11 @@ async function loadData(){
   try{ state.lastBackup = await store.get('lastBackup'); }catch(e){ state.lastBackup = null; }
   try{ state.hideTips = await store.get('hideTips'); }catch(e){ state.hideTips = false; }
   try{ state.cloud = await store.get('cloud'); }catch(e){ state.cloud = null; }
+  // 클라우드 미설정이면 가족 공유 기본값을 자동 주입 (배포마다 재입력 불필요)
+  if(!state.cloud || !state.cloud.url){
+    state.cloud = { url: CLOUD_DEFAULT.url, key: CLOUD_DEFAULT.key, ws: CLOUD_DEFAULT.ws, lastSync: null };
+    try{ await store.set('cloud', state.cloud); }catch(e){}
+  }
   try{ state.pendingSync = await store.get('pendingSync'); }catch(e){ state.pendingSync = false; }
   try{ state.photoShared = await store.get('photoShared'); }catch(e){ state.photoShared = null; }
   try{ state.trash = await store.get('trash'); }catch(e){ state.trash = []; }
@@ -902,6 +1107,10 @@ async function loadData(){
   if(!Array.isArray(state.notices)) state.notices = [];
   try{ state.downloads = await store.get('downloads'); }catch(e){ state.downloads = []; }
   if(!Array.isArray(state.downloads)) state.downloads = [];
+  try{ state.aiDocs = await store.get('aiDocs'); }catch(e){ state.aiDocs = []; }
+  if(!Array.isArray(state.aiDocs)) state.aiDocs = [];
+  try{ state.photoUse = await store.get('photoUse'); }catch(e){ state.photoUse = {}; }
+  if(!state.photoUse || typeof state.photoUse!=='object') state.photoUse = {};
   try{ state.events = await store.get('events'); }catch(e){ state.events = []; }
   if(!Array.isArray(state.events)) state.events = [];
   try{ state.homeBanner = await store.get('homeBanner'); }catch(e){ state.homeBanner = null; }
@@ -932,6 +1141,13 @@ async function loadData(){
   }
   if(!Array.isArray(state.asList)) state.asList=[];
   render();
+  // 배포마다 재입력 없이 자동 클라우드 연결 (데이터 받아오고 실시간 구독 시작)
+  if(state.cloud && state.cloud.url){
+    (async()=>{
+      try{ const r=await cloudPull(true); if(r&&r.ok) render(); }catch(e){ console.warn('auto cloud pull', e); }
+      try{ rtStop(); rtStart(); }catch(e){}
+    })();
+  }
   setTimeout(()=>{ migrateQuoteLines(); }, 800);   // 기존 견적 품목 자동 채움
   if(state.loadDegraded){
     toast('통신이 잠시 막혀 자료를 다시 받는 중이에요…','warn');
@@ -1156,11 +1372,11 @@ function statusClass(s){
 
 const ROLE_MENUS = {
   '전체(관리자)': null,
-  '경영지원':   ['home','notices','quotes','projects','clients','pay','sales','downloads','trash','settings'],
+  '경영지원':   ['home','aicompany','airesults','website','notices','quotes','projects','clients','pay','sales','downloads','trash','settings'],
   '디자이너':   ['home','notices','quotes','projects','clients','items','gallery','downloads','settings'],
   '생산':       ['home','notices','projects','mfg','install','jobs','gallery','downloads','settings'],
   '설치':       ['home','notices','projects','install','jobs','as','gallery','downloads','settings'],
-  '읽기전용':   ['home','notices','quotes','projects','clients','sales','gallery','downloads','settings'],
+  '읽기전용':   ['home','aicompany','notices','quotes','projects','clients','sales','gallery','downloads','settings'],
 };
 function visibleNav(){
   const cf=state.navConf;
@@ -1295,7 +1511,11 @@ function renderQuotes(){
   if(state.filterStatus !== '전체'){
     list = list.filter(x=>x.status===state.filterStatus);
   }
+  if(state.filterMonth && state.filterMonth!=='전체'){
+    list = list.filter(x=>(x.date||'').slice(0,7)===state.filterMonth);
+  }
   list = [...list].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const months = [...new Set(state.quotes.map(x=>(x.date||'').slice(0,7)).filter(Boolean))].sort().reverse();
 
   return `
     <div class="topbar"><h1>견적관리</h1><button class="btn" id="newQuoteBtn">+ 신규 견적</button></div>
@@ -1304,6 +1524,10 @@ function renderQuotes(){
         <input type="text" id="searchInput" placeholder="거래처, 품목, 견적번호 검색" value="${esc(state.search)}">
         <select id="statusFilter">
           ${['전체','견적발송','계약','시공완료','미성사'].map(s=>`<option ${state.filterStatus===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <select id="monthFilter" title="월별 조회">
+          <option ${(!state.filterMonth||state.filterMonth==='전체')?'selected':''}>전체</option>
+          ${months.map(m=>`<option ${state.filterMonth===m?'selected':''}>${m}</option>`).join('')}
         </select>
         <div style="margin-left:auto; font-size:12px; color:var(--text-mute)">${list.length}건 표시</div>
       </div>
@@ -1316,18 +1540,22 @@ function renderQuotes(){
             <td data-l="날짜">${q.date}</td>
             <td data-l="거래처">${esc(q.client)}${(()=>{const rv=revisionsOf(q); if(rv.length<2) return ''; const i=rv.findIndex(x=>x.id===q.id)+1; return ` <span class="revtag" title="이 현장에 견적 ${rv.length}건">${i}/${rv.length}차</span>`;})()}</td>
             <td data-l="지역">${esc(q.region)}</td>
-            <td data-l="내용" style="max-width:220px; overflow:hidden; text-overflow:ellipsis;">${esc(q.item)}${(()=>{ const d=getInstall(q.id).doneDate; return d? ` <span class="badge 계약" title="시공 완료일">🔨${esc(d.slice(2).replace(/-/g,'.'))}</span>`:''; })()}</td>
+            <td data-l="내용" style="max-width:220px; overflow:hidden; text-overflow:ellipsis;">${esc(q.item)}${(()=>{ const inst=getInstall(q.id); if(inst.doneUnknown) return ` <span class="badge 계약" title="시공완료 · 날짜 미상">🔨완료(미상)</span>`; const d=inst.doneDate; return d? ` <span class="badge 계약" title="시공 완료일">🔨${esc(d.slice(2).replace(/-/g,'.'))}</span>`:''; })()}</td>
             <td data-l="금액" class="amt">${fmt(linesTotal(q))}</td>
             <td data-l="상태">
               <select class="status-select" data-id="${q.id}">
                 ${['견적발송','계약','시공완료','미성사'].map(s=>`<option ${q.status===s?'selected':''}>${s}</option>`).join('')}
               </select>
-              ${(q.status==='계약'||q.status==='시공완료')? `<input type="date" class="qInstDate" data-id="${q.id}" value="${getInstall(q.id).doneDate||''}" title="시공한 날 — 적으면 시공완료로 처리돼요" style="margin-top:5px;padding:5px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;width:100%;box-sizing:border-box">`:''}
+              ${(q.status==='계약'||q.status==='시공완료')? (()=>{ const inst=getInstall(q.id); const unk=inst.doneUnknown; return `<div style="display:flex;gap:4px;margin-top:5px;align-items:center">
+                <input type="date" class="qInstDate" data-id="${q.id}" value="${unk?'':(inst.doneDate||'')}" ${unk?'disabled':''} title="시공한 날 — 적으면 시공완료로 처리돼요" style="flex:1;min-width:0;padding:5px 6px;font-size:12px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;${unk?'background:#eef0f4;color:#aaa':''}">
+                <button type="button" class="qInstUnknown" data-id="${q.id}" title="시공일을 모를 때 (완료·날짜미상)" style="padding:5px 7px;font-size:11px;border-radius:6px;border:1px solid ${unk?'var(--navy)':'var(--border)'};background:${unk?'var(--navy)':'#fff'};color:${unk?'#fff':'var(--text-mute)'};cursor:pointer;white-space:nowrap;flex-shrink:0">미상</button>
+              </div>`; })():''}
             </td>
             <td data-l="" class="qbtns">
               <button class="btn qSend" data-id="${q.id}" title="견적서 저장·보내기">📤 저장</button>
               <button class="btn secondary qCopy2" data-id="${q.id}" title="복사해 새 견적">⧉ 복사</button>
               <button class="btn secondary qEdit" data-id="${q.id}" title="수정">✎ 수정</button>
+              <button class="btn secondary payBtn" data-id="${q.id}" title="수금 관리" style="padding:5px 9px;font-size:12px;${state.payments&&state.payments[q.id]?'color:var(--green);border-color:var(--green)':''}">💰 수금${state.payments&&state.payments[q.id]?' ✓':''}</button>
               <button class="btn secondary qDel" data-id="${q.id}" title="삭제(휴지통으로)" style="padding:5px 9px;font-size:12px;color:var(--red);border-color:#E7C4BC">🗑</button>
             </td>
           </tr>`).join('')}
@@ -1474,7 +1702,21 @@ function renderClientModal(){
         <div class="field"><label>담당자</label><input type="text" id="fc_contact" value="${editing?.contact||''}"></div>
         <div class="field"><label>전화번호</label><input type="text" id="fc_phone" value="${editing?.phone||''}"></div>
         <div class="field"><label>휴대폰</label><input type="text" id="fc_mobile" value="${editing?.mobile||''}"></div>
-        <div class="field"><label>주소</label><input type="text" id="fc_address" value="${editing?.address||''}"></div>
+        <div class="field"><label>주소</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="fc_address" value="${esc(editing?.address||'')}" style="flex:1" placeholder="🔍 주소검색으로 자동입력">
+            <button type="button" class="btn secondary" id="fc_addrSearch" style="white-space:nowrap;flex-shrink:0">🔍 주소검색</button>
+          </div>
+          <input type="hidden" id="fc_zonecode" value="${esc(editing?.zonecode||'')}">
+          <input type="hidden" id="fc_sido" value="${esc(editing?.sido||'')}">
+          <input type="hidden" id="fc_sigungu" value="${esc(editing?.sigungu||'')}">
+          <input type="hidden" id="fc_dong" value="${esc(editing?.dong||'')}">
+          <input type="hidden" id="fc_lat" value="${editing?.lat||''}">
+          <input type="hidden" id="fc_lng" value="${editing?.lng||''}">
+          <div id="fc_addrExtra" style="font-size:11.5px;color:var(--text-mute);margin-top:5px">${editing&&editing.zonecode?`[${esc(editing.zonecode)}] ${esc(editing.sido||'')} ${esc(editing.sigungu||'')} ${esc(editing.dong||'')}${editing.lat?' · 📍좌표 저장됨':''}`:''}</div>
+          <div id="fc_map" style="display:none;height:170px;border-radius:8px;margin-top:8px;border:1px solid var(--border)"></div>
+          <button type="button" class="btn secondary" id="fc_mapView" style="display:${editing&&editing.lat?'block':'none'};margin-top:7px;width:100%">📍 지도에서 위치 확인</button>
+        </div>
         <div class="field"><label>이메일</label><input type="text" id="fc_email" value="${editing?.email||''}"></div>
         <div class="field"><label>결제조건</label><input type="text" id="fc_terms" placeholder="예: 계약금30%/잔금70%" value="${editing?.terms||''}"></div>
         <div class="field"><label>할인율(%)</label><input type="number" id="fc_discount" value="${editing?.discount||0}"></div>
@@ -2517,9 +2759,9 @@ function renderSettings(){
           연결하면 남편·아버님과 <b>같은 자료</b>를 실시간으로 보게 됩니다. 무료이고 카드 등록도 필요 없어요.<br>
           아래 3개를 입력하세요. 키는 <b>Publishable</b>(sb_publishable_로 시작) 이어야 하고, Secret 키는 쓰면 안 돼요.
         </p>
-        <div class="field"><label>1. 프로젝트 URL</label><input type="text" id="fcl_url" placeholder="https://xxxx.supabase.co"></div>
-        <div class="field"><label>2. Publishable 키</label><input type="text" id="fcl_key" placeholder="sb_publishable_... (또는 eyJhbGci...)"></div>
-        <div class="field"><label>3. 작업공간 이름 (가족 모두 동일하게)</label><input type="text" id="fcl_ws" placeholder="예: hm-sign-2026" value="hm-sign"></div>
+        <div class="field"><label>1. 프로젝트 URL</label><input type="text" id="fcl_url" placeholder="https://xxxx.supabase.co" value="${esc((state.cloud&&state.cloud.url)||'')}"></div>
+        <div class="field"><label>2. Publishable 키</label><input type="text" id="fcl_key" placeholder="sb_publishable_... (또는 eyJhbGci...)" value="${esc((state.cloud&&state.cloud.key)||'')}"></div>
+        <div class="field"><label>3. 작업공간 이름 (가족 모두 동일하게)</label><input type="text" id="fcl_ws" placeholder="예: hm-sign-2026" value="${esc((state.cloud&&state.cloud.ws)||'hm-sign')}"></div>
         <button class="btn" id="cloudConnect">연결하기</button>
         <div id="cloudMsg" style="font-size:12.5px; margin-top:10px"></div>
       `}
@@ -2970,13 +3212,23 @@ async function addRouteExtra(date, label, addr){
   (state.routeExtra[date]=state.routeExtra[date]||[]).push({id:uid('rx'), qid:null, type:'직접', label, addr, tel:''});
   try{ await store.set('routeExtra', state.routeExtra); }catch(e){} scheduleCloudPush();
 }
-function routeAddClientSelect(){
-  const cs=(state.clients||[]).map((c,i)=>({c,i})).sort((a,b)=>String(a.c.branch||a.c.name||'').localeCompare(String(b.c.branch||b.c.name||'')));
-  if(!cs.length) return '';
-  return `<select id="rx_client" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:13px;margin-bottom:7px;background:#F7F9FC">
-    <option value="">📇 등록된 거래처에서 골라 담기…</option>
-    ${cs.map(({c,i})=>`<option value="${i}">${esc(c.branch||c.name)}${c.address?' · '+esc(String(c.address).slice(0,22)):''}</option>`).join('')}
-  </select>`;
+function routeClientPicker(date){
+  date = date || state.routeDate || todayStr();
+  const cs=(state.clients||[]).slice().sort((a,b)=>String(a.branch||a.name||'').localeCompare(String(b.branch||b.name||'')));
+  if(!cs.length) return '<div style="font-size:12px;color:var(--text-mute);margin-bottom:8px">등록된 거래처가 없어요 — 거래처관리에서 먼저 등록하세요.</div>';
+  const addedLabels=new Set(routeExtras(date).map(e=>e.label));
+  const onCount=cs.filter(c=>addedLabels.has(c.branch||c.name)).length;
+  return `
+    <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">📇 거래처에서 담기 <span style="font-weight:400;color:var(--text-mute);font-size:11.5px">— 체크 = 오늘 동선에 포함${onCount?` · <b style="color:var(--navy)">${onCount}곳 담김</b>`:''}</span></div>
+    <div style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;margin-bottom:10px">
+      ${cs.map(c=>{
+        const lbl=c.branch||c.name; const on=addedLabels.has(lbl);
+        return `<label style="display:flex;align-items:center;gap:9px;padding:9px 8px;border-radius:6px;cursor:pointer;${on?'background:var(--amber-bg)':''}">
+          <input type="checkbox" class="rcPick" data-label="${esc(lbl)}" data-addr="${esc(c.address||c.region||c.name||'')}" ${on?'checked':''} style="width:17px;height:17px;accent-color:var(--navy);flex-shrink:0">
+          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="font-size:13px">${esc(lbl)}</b>${c.address?`<span style="color:var(--text-mute);font-size:11.5px"> · ${esc(String(c.address).slice(0,26))}</span>`:''}</span>
+        </label>`;
+      }).join('')}
+    </div>`;
 }
 /* 최근접 이웃으로 방문 순서 최적화 */
 function optimizeRoute(startGeo, stops){
@@ -3040,7 +3292,190 @@ async function kakaoGeocode(addr){
     }catch(e){ res(null); }
   });
 }
-/* 실제 지도 그리기: points=[{lat,lng,label,no}], 선 연결 여부 */
+/* ===== 장소·주소 검색(카카오 Local, Places.keywordSearch) + 좌표/행정구역 =====
+   - 상호명/주소 둘 다 검색. 외부 라이브러리 추가 없음(기존 카카오 SDK 사용)
+   - 향후 'AI 주소추천'은 openAddressSearch만 확장하면 됨 */
+/* 카카오 장소검색(Kakao Local, Places.keywordSearch) — 상호명/주소 둘 다 검색.
+   결과 목록에서 선택 → opts.onComplete(data) 호출.
+   data = {placeName, address, roadAddress, jibunAddress, phone, lat, lng, sido, sigungu, dong}
+   ※ 외부 라이브러리 추가 없음 (기존 카카오 지도 SDK의 services 사용) */
+/* 다음 우편번호(주소 자동완성) 지연 로드 — 도로명·지번 정밀 주소검색용 */
+function loadPostcode(){
+  return new Promise(res=>{
+    if(window.daum && window.daum.Postcode) return res(true);
+    const s=document.createElement('script');
+    s.src='//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    s.onload=()=>res(true); s.onerror=()=>res(false);
+    document.head.appendChild(s);
+  });
+}
+async function openAddressSearch(opts){
+  opts=opts||{};
+  console.log('[주소검색] 장소검색 실행, query=', opts.query);
+  if(!(await loadKakao())){ toast('지도 서비스를 불러오지 못했어요 (카카오 도메인 등록 확인)','warn'); return; }
+  if(!(kakao.maps.services && kakao.maps.services.Places)){ toast('장소검색 모듈을 불러오지 못했어요','warn'); return; }
+
+  const old=document.getElementById('addrSearchOverlay'); if(old) old.remove();
+  const ov=document.createElement('div');
+  ov.id='addrSearchOverlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(20,30,50,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML=`
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+      <div style="padding:16px 18px 12px;border-bottom:1px solid var(--border,#e3e8f0)">
+        <div style="font-weight:800;font-size:16px;color:var(--navy,#1F3864);margin-bottom:10px">🔍 장소·주소 검색</div>
+        <div style="display:flex;gap:6px">
+          <input id="asInput" type="text" placeholder="상호명 또는 주소 (예: 올인베이커리 여주창동점)" style="flex:1;padding:11px;border:1px solid var(--border,#e3e8f0);border-radius:8px;font-size:14px" value="${esc(opts.query||'')}">
+          <button id="asGo" type="button" style="padding:11px 16px;background:var(--navy,#1F3864);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">검색</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-mute,#6F82A8);margin-top:6px">위엔 <b>상호명</b>(가게 이름)으로 검색해요.</div>
+        <button id="asPostcode" type="button" style="width:100%;margin-top:8px;padding:11px;background:#fff;border:1px solid var(--navy,#1F3864);color:var(--navy,#1F3864);border-radius:8px;font-weight:700;cursor:pointer">📮 도로명·지번 주소로 정확히 찾기</button>
+      </div>
+      <div id="asResults" style="overflow-y:auto;padding:6px 8px;flex:1;min-height:120px"></div>
+      <div style="padding:10px 18px;border-top:1px solid var(--border,#e3e8f0);text-align:right">
+        <button id="asClose" type="button" style="padding:9px 16px;background:#fff;border:1px solid var(--border,#e3e8f0);border-radius:8px;cursor:pointer">닫기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const q1=s=>ov.querySelector(s);
+  const input=q1('#asInput'), results=q1('#asResults');
+  const close=()=>ov.remove();
+  q1('#asClose').addEventListener('click', close);
+  ov.addEventListener('click', e=>{ if(e.target===ov) close(); });
+
+  const ps=new kakao.maps.services.Places();
+  let lastData=[];
+  const parseRegion=addr=>{ const p=String(addr||'').split(' '); return {sido:p[0]||'', sigungu:p[1]||'', dong:p[2]||''}; };
+  const pick=place=>{
+    const addr=place.road_address_name||place.address_name||'';
+    const reg=parseRegion(place.address_name||place.road_address_name||'');
+    return { placeName:place.place_name||'', address:addr,
+      roadAddress:place.road_address_name||'', jibunAddress:place.address_name||'',
+      phone:place.phone||'', lat:parseFloat(place.y), lng:parseFloat(place.x),
+      sido:reg.sido, sigungu:reg.sigungu, dong:reg.dong };
+  };
+  const openMap=place=>{ window.open('https://map.kakao.com/link/map/'+encodeURIComponent((place.place_name||'현장')+','+place.y+','+place.x), '_blank'); };
+
+  const rowHtml=(p,i)=>`
+    <div class="asRow" data-i="${i}" style="display:flex;align-items:center;gap:8px;padding:11px 10px;border-bottom:1px solid #f0f3f8;cursor:pointer">
+      <div style="min-width:0;flex:1">
+        <div style="font-weight:700;font-size:13.5px;color:var(--navy,#1F3864);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.place_name||p.address_name||'')}</div>
+        <div style="font-size:12px;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.road_address_name||p.address_name||'')}</div>
+        ${p.phone?`<div style="font-size:11.5px;color:var(--text-mute,#6F82A8);margin-top:1px">📞 ${esc(p.phone)}</div>`:''}
+      </div>
+      <button class="asMap" type="button" data-i="${i}" style="flex-shrink:0;padding:8px 10px;background:#fff;border:1px solid var(--border,#e3e8f0);border-radius:8px;font-size:12px;cursor:pointer">📍 지도</button>
+    </div>`;
+  const renderList=(list, note)=>{
+    lastData=list;
+    results.innerHTML=(note?`<div style="padding:8px 11px;font-size:11.5px;color:#7A4E0E;background:var(--amber-bg,#FBEFD6);border-radius:8px;margin:2px 2px 6px">${esc(note)}</div>`:'')
+      + list.map((p,i)=>rowHtml(p,i)).join('');
+  };
+  // 장소검색 결과에 주소검색 결과를 합쳐(주소 직접입력 대응) 최대한 많이 보여줌
+  const mergeAddress=(q, baseList, done)=>{
+    try{
+      const geo=new kakao.maps.services.Geocoder();
+      geo.addressSearch(q, (adata, astatus)=>{
+        const list=baseList.slice();
+        if(astatus===kakao.maps.services.Status.OK){
+          adata.forEach(a=>{
+            const road=(a.road_address&&a.road_address.address_name)||'';
+            const nm=a.address_name;
+            if(!list.some(p=>(p.road_address_name||p.address_name)===nm)){
+              list.push({ place_name:(a.road_address&&a.road_address.building_name)||nm, address_name:nm, road_address_name:road, x:a.x, y:a.y, phone:'' });
+            }
+          });
+        }
+        done(list);
+      });
+    }catch(e){ done(baseList.slice()); }
+  };
+  // keywordSearch/addressSearch를 Promise로 감싸 여러 변형을 순차 시도
+  const kwSearch=(q)=> new Promise(res=>{ try{ ps.keywordSearch(q,(d,s)=>res(s===kakao.maps.services.Status.OK? d : []),{size:15}); }catch(e){ res([]); } });
+  const addrSearch=(q)=> new Promise(res=>{ try{ new kakao.maps.services.Geocoder().addressSearch(q,(d,s)=>{ if(s!==kakao.maps.services.Status.OK) return res([]); res((d||[]).map(a=>({place_name:(a.road_address&&a.road_address.building_name)||a.address_name, address_name:a.address_name, road_address_name:(a.road_address&&a.road_address.address_name)||'', x:a.x, y:a.y, phone:''}))); }); }catch(e){ res([]); } });
+  const mergeUniq=(a,b)=>{ const key=p=>(p.road_address_name||p.address_name||p.place_name||''); const seen=new Set(a.map(key)); (b||[]).forEach(p=>{ const k=key(p); if(k && !seen.has(k)){ seen.add(k); a.push(p); } }); return a; };
+  // 단어 순서에 안 맞아도 찾게: 원본 + 뒤집기 + 앞단어 뒤로
+  const variants=(q)=>{ const w=q.split(/\s+/).filter(Boolean); const v=[q]; if(w.length>=2){ v.push(w.slice().reverse().join(' ')); v.push(w.slice(1).concat(w[0]).join(' ')); } return [...new Set(v)]; };
+  let searchSeq=0;
+  async function doSearch(q, original){
+    q=(q==null? (input.value||'') : q).trim();
+    if(!q){ results.innerHTML=''; return; }
+    original=original||q;
+    const mySeq=++searchSeq;
+    results.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-mute,#6F82A8);font-size:13px">검색 중…</div>';
+    let list=[];
+    for(const v of variants(q)){ mergeUniq(list, await kwSearch(v)); if(mySeq!==searchSeq) return; if(list.length>=12) break; }
+    if(list.length<3){ mergeUniq(list, await addrSearch(q)); if(mySeq!==searchSeq) return; }
+    if(list.length){
+      renderList(list, (q!==original)? `'${original}' 정확한 결과가 없어 '${q}'(으)로 넓혀 찾았어요` : '');
+    } else {
+      const parts=q.split(/\s+/);
+      if(parts.length>1){ doSearch(parts.slice(0,-1).join(' '), original); }   // 마지막 단어 빼고 자동 재검색
+      else { results.innerHTML='<div style="padding:28px;text-align:center;color:var(--text-mute,#6F82A8);font-size:13.5px">검색 결과가 없습니다.<br><span style="font-size:12px">상호명을 짧게(예: 브랜드+지역) 넣거나, 주소를 직접 입력해보세요.</span></div>'; }
+    }
+  }
+  results.addEventListener('click', e=>{
+    const mapBtn=e.target.closest('.asMap');
+    if(mapBtn){ e.stopPropagation(); openMap(lastData[+mapBtn.dataset.i]); return; }
+    const row=e.target.closest('.asRow');
+    if(row){ const p=lastData[+row.dataset.i]; if(!p) return; const data=pick(p);
+      console.log('[주소검색] 선택됨:', data.placeName, data.address);
+      close(); if(opts.onComplete) opts.onComplete(data); }
+  });
+  // 실시간 검색: 타이핑하면 자동으로 결과가 뜸 (한글 조합 안전)
+  let asComposing=false;
+  const liveSearch=debounce(()=>{ if(!asComposing) doSearch(); }, 300);
+  input.addEventListener('compositionstart', ()=>{ asComposing=true; });
+  input.addEventListener('compositionend', ()=>{ asComposing=false; liveSearch(); });
+  input.addEventListener('input', ()=>{ if(!asComposing) liveSearch(); });
+  q1('#asGo').addEventListener('click', ()=>doSearch());
+  // 📮 도로명·지번 주소 정밀검색 (다음 우편번호를 창 안에 임베드 → 팝업 차단 없음)
+  const asPost=q1('#asPostcode');
+  if(asPost) asPost.addEventListener('click', async ()=>{
+    if(!(await loadPostcode())){ toast('주소검색을 불러오지 못했어요','warn'); return; }
+    results.innerHTML='<div style="padding:6px 4px 4px;font-size:12px;color:var(--navy,#1F3864);font-weight:700">📮 도로명·지번·건물명으로 검색하세요</div><div id="asPostBox" style="width:100%;height:430px"></div>';
+    const box=q1('#asPostBox');
+    try{
+      new daum.Postcode({
+        async oncomplete(d){
+          const road=d.roadAddress||d.address||'';
+          const jibun=d.jibunAddress||d.autoJibunAddress||'';
+          const data={ placeName:(d.buildingName||'')||'', address:road||jibun, roadAddress:road, jibunAddress:jibun,
+            phone:'', sido:d.sido||'', sigungu:d.sigungu||'', dong:d.bname||'', zonecode:d.zonecode||'' };
+          const geo=await kakaoGeocode(data.address); if(geo){ data.lat=geo[0]; data.lng=geo[1]; }
+          console.log('[주소검색] 우편번호 선택:', data.address);
+          close(); if(opts.onComplete) opts.onComplete(data);
+        },
+        width:'100%', height:'100%'
+      }).embed(box);
+    }catch(e){ console.error('postcode embed', e); toast('주소검색 창을 여는 데 실패했어요','warn'); }
+  });
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doSearch(); } });
+  input.focus();
+  if((opts.query||'').trim()) doSearch();   // 상호명 있으면 바로 검색
+}
+/* 거래처 중복/유사 감지 — 상호·전화·주소 기준. returns [{client, why}] */
+function findDuplicateClients(name, phone, addr, excludeId){
+  const norm=s=>String(s||'').replace(/[\s\-()]/g,'').toLowerCase();
+  const N=norm(name), P=norm(phone), A=norm(addr), out=[];
+  (state.clients||[]).forEach(c=>{
+    if(excludeId && c.id===excludeId) return;
+    const cn=norm(c.branch||c.name), cp=norm(c.phone)||norm(c.mobile), ca=norm(c.address);
+    let why='';
+    if(N && cn && cn===N) why='같은 상호';
+    else if(P && cp && cp===P) why='같은 전화번호';
+    else if(A && ca && A.length>4 && ca===A) why='같은 주소';
+    else if(N && cn && N.length>=3 && (cn.includes(N)||N.includes(cn))) why='유사한 상호';
+    if(why) out.push({client:c, why});
+  });
+  return out;
+}
+/* 지도 링크(카카오맵) — 좌표 있으면 위치, 없으면 주소 검색 */
+function kakaoMapLink(name, lat, lng, addr){
+  if(lat&&lng) return 'https://map.kakao.com/link/map/'+encodeURIComponent((name||'현장')+','+lat+','+lng);
+  if(addr) return 'https://map.kakao.com/link/search/'+encodeURIComponent(addr);
+  return 'https://map.kakao.com';
+}
+/* 지도 그리기: points=[{lat,lng,label,no}], 선 연결 여부 */
 async function drawKakaoMap(elId, points, opts){
   opts=opts||{};
   if(!(await loadKakao())) return false;
@@ -3250,11 +3685,13 @@ function renderRouteDayPanel(date){
       : `<div class="empty" style="padding:26px">${date} 방문 예정 현장이 없어요.<br><span style="font-size:12px">위의 <b>지역별 대기 현장</b>에서 날짜를 배정해 보세요.</span></div>`}
     <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
       <div style="font-size:12.5px;font-weight:700;margin-bottom:7px">✏️ 현장 직접 추가</div>
-      ${routeAddClientSelect()}
+      ${routeClientPicker(date)}
+      <button type="button" class="btn" id="rxSearch" style="width:100%;margin-bottom:8px">🔍 지도에서 검색해서 추가 (상호·주소)</button>
+      <div style="font-size:11.5px;color:var(--text-mute);margin:-2px 0 8px">또는 아래에 직접 입력:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:center">
         <input type="text" id="rx_name" placeholder="현장명 (예: 올인 동탄점)" style="min-width:0;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:13px">
         <input type="text" id="rx_addr" placeholder="지역 (예: 동탄, 수원)" style="min-width:0;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:13px">
-        <button class="btn" id="rxAdd" style="padding:11px 18px;white-space:nowrap">+ 추가</button>
+        <button class="btn secondary" id="rxAdd" style="padding:11px 18px;white-space:nowrap">+ 추가</button>
       </div>
       <div style="font-size:11.5px;color:var(--text-mute);margin-top:6px">지역에 <b>시·군·구 이름</b>(동탄·수원·전주 등)을 넣으면 지도에 위치가 잡힙니다.</div>
     </div>`;
@@ -3418,11 +3855,12 @@ function renderRouteModal(){
         </div>`:''}
       <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px">✏️ 현장 직접 추가</div>
-        ${routeAddClientSelect()}
+        ${routeClientPicker(date)}
+        <button type="button" class="btn" id="rxSearch" style="width:100%;margin-bottom:8px">🔍 지도에서 검색해서 추가 (상호·주소)</button>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <input type="text" id="rx_name" placeholder="현장명 (예: 김사장 가게)" style="flex:1;min-width:110px;padding:9px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px">
           <input type="text" id="rx_addr" placeholder="주소/지역 (예: 수원 영통)" style="flex:1.4;min-width:130px;padding:9px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px">
-          <button class="btn" id="rxAdd" style="padding:9px 14px">추가</button>
+          <button class="btn secondary" id="rxAdd" style="padding:9px 14px">추가</button>
         </div>
       </div>
       <div class="modal-actions"><button class="btn secondary" id="routeClose">닫기</button></div>
@@ -4421,6 +4859,7 @@ function renderClientDetail(){
     <div class="topbar">
       <h1>${esc(c.branch||c.name)}</h1>
       <div style="display:flex;gap:8px">
+        <button class="btn secondary" id="cdMap">📍 지도보기</button>
         <button class="btn secondary" id="cdEdit">정보 수정</button>
         <button class="btn secondary" id="cdBack">← 목록</button>
       </div>
@@ -4697,13 +5136,21 @@ function renderGallery(){
           </div>
         </div>
         <div class="photo-grid">
-          ${g.photos.map((p,i)=>`
+          ${g.photos.map((p,i)=>{
+            const use = (state.photoUse||{})[g.key+'#'+i] || {};
+            return `
             <div class="photo-item" style="position:relative">
               <img src="${p.d}" alt="사진" class="galImg" data-key="${esc(g.key)}" data-i="${i}">
               ${p.k? `<span style="position:absolute;left:4px;top:4px;background:rgba(31,56,100,.85);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px">${esc(p.k)}</span>`:''}
               <button class="galDel" data-key="${esc(g.key)}" data-i="${i}" title="사진 삭제"
                 style="position:absolute;right:4px;top:4px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(179,49,28,.9);color:#fff;font-size:14px;cursor:pointer;line-height:1">×</button>
-            </div>`).join('')}
+              <div class="photo-use">
+                <label><input type="checkbox" class="photoUseChk" data-key="${esc(g.key)}" data-i="${i}" data-f="portfolio" ${use.portfolio?'checked':''}>포트폴리오</label>
+                <label><input type="checkbox" class="photoUseChk" data-key="${esc(g.key)}" data-i="${i}" data-f="blog" ${use.blog?'checked':''}>블로그</label>
+                <label><input type="checkbox" class="photoUseChk" data-key="${esc(g.key)}" data-i="${i}" data-f="sns" ${use.sns?'checked':''}>SNS</label>
+                <label><input type="checkbox" class="photoUseChk" data-key="${esc(g.key)}" data-i="${i}" data-f="home" ${use.home?'checked':''}>홈페이지</label>
+              </div>
+            </div>`;}).join('')}
         </div>
       </div>`).join('')}
   `;
@@ -4919,7 +5366,14 @@ function renderModal(){
         </div>
         <div id="clientInfoLine" style="font-size:12px; color:var(--text-mute); margin:-2px 0 12px;"></div>
         <div class="frow">
-          <div class="field" style="flex:1"><label>현장/지역</label><input type="text" id="f_region" value="${esc(H.region)}" placeholder="예: 경기 수원"></div>
+          <div class="field" style="flex:1"><label>현장/지역</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="f_region" value="${esc(H.region)}" placeholder="🔍 주소검색 또는 직접입력" style="flex:1">
+              <button type="button" class="btn secondary" id="fq_addrSearch" style="white-space:nowrap;flex-shrink:0;padding:8px 11px" title="주소검색">🔍</button>
+            </div>
+            <input type="hidden" id="fq_lat" value="${H.lat||''}"><input type="hidden" id="fq_lng" value="${H.lng||''}">
+            <input type="hidden" id="fq_zonecode" value="${esc(H.zonecode||'')}"><input type="hidden" id="fq_sido" value="${esc(H.sido||'')}"><input type="hidden" id="fq_sigungu" value="${esc(H.sigungu||'')}"><input type="hidden" id="fq_dong" value="${esc(H.dong||'')}">
+          </div>
           <div class="field" style="flex:1"><label>공사명</label><input type="text" id="f_item" value="${esc(H.item)}" placeholder="예: 간판 외"></div>
         </div>
         ${(()=>{ const id=state.editQuoteId;
@@ -5728,6 +6182,1232 @@ async function migrateQuoteLines(){
   }catch(e){ console.warn('migrate', e&&e.message); return 0; }
 }
 
+// ===== 홈페이지 관리 (CMS Worker 연동) =====
+// 인증: Supabase Auth 이메일 로그인 → JWT → CMS Worker가 ADMIN_EMAILS 대조.
+// 고정 관리자 토큰을 코드에 넣지 않는다 (브라우저에 노출되면 안 되므로).
+// Worker 환경변수: ADMIN_EMAILS / ALLOWED_ORIGIN / ERP_ORIGIN / PUBLIC_ORIGIN / SUPABASE_URL / SUPABASE_SECRET_KEY
+const CMS_API   = 'https://hm-sign-website-cms.dmswl1701.workers.dev';
+const CMS_SITE  = 'https://hm-sign-website.pages.dev';
+const SB_URL    = 'https://ndjxdwsvgoxzzrszsycj.supabase.co';
+const SB_KEY    = 'sb_publishable_UsTuMFM8HqLdKI-8Hf6r9Q';   // 공개(publishable) 키 — 노출되어도 안전
+const CMS_TOKEN_KEY = 'hmCmsSession';
+
+let cmsSession = null;      // {access_token, refresh_token, expires_at, email}
+let cmsData    = null;      // 서버에서 불러온 사이트 설정
+let cmsInquiries = null;    // 문의 목록
+
+/* ---------- 세션 저장/복원 ---------- */
+function cmsLoadSession(){
+  try{
+    const raw = localStorage.getItem(CMS_TOKEN_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(s && s.expires_at && s.expires_at*1000 > Date.now()+60000) return s;
+    return s || null;   // 만료돼도 refresh 시도용으로 보관
+  }catch(e){ return null; }
+}
+function cmsSaveSession(s){
+  cmsSession = s;
+  try{ s ? localStorage.setItem(CMS_TOKEN_KEY, JSON.stringify(s)) : localStorage.removeItem(CMS_TOKEN_KEY); }catch(e){}
+}
+function cmsExpired(){
+  return !cmsSession || !cmsSession.expires_at || cmsSession.expires_at*1000 <= Date.now()+30000;
+}
+
+/* ---------- Supabase Auth ---------- */
+async function cmsSendCode(email){
+  const r = await fetch(SB_URL+'/auth/v1/otp', {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'content-type':'application/json'},
+    body: JSON.stringify({email, create_user:true})
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,160)); }
+  return true;
+}
+async function cmsVerifyCode(email, token){
+  const r = await fetch(SB_URL+'/auth/v1/verify', {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'content-type':'application/json'},
+    body: JSON.stringify({email, token, type:'email'})
+  });
+  const j = await r.json();
+  if(!r.ok || !j.access_token) throw new Error((j.error_description||j.msg||j.error||'인증 실패'));
+  cmsSaveSession({
+    access_token:j.access_token, refresh_token:j.refresh_token,
+    expires_at:j.expires_at, email:(j.user&&j.user.email)||email
+  });
+  return true;
+}
+async function cmsRefresh(){
+  if(!cmsSession || !cmsSession.refresh_token) return false;
+  try{
+    const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'content-type':'application/json'},
+      body: JSON.stringify({refresh_token:cmsSession.refresh_token})
+    });
+    const j = await r.json();
+    if(!r.ok || !j.access_token) return false;
+    cmsSaveSession({
+      access_token:j.access_token, refresh_token:j.refresh_token,
+      expires_at:j.expires_at, email:(j.user&&j.user.email)||cmsSession.email
+    });
+    return true;
+  }catch(e){ return false; }
+}
+function cmsLogout(){
+  cmsSaveSession(null); cmsData=null; cmsInquiries=null;
+  toast('로그아웃했어요','ok'); render();
+}
+
+/* ---------- CMS API 호출 ---------- */
+async function cmsFetch(path, opts){
+  opts = opts || {};
+  if(cmsExpired()) await cmsRefresh();
+  if(!cmsSession) throw new Error('로그인이 필요합니다');
+  const headers = Object.assign({
+    'authorization':'Bearer '+cmsSession.access_token,
+    'accept':'application/json'
+  }, opts.headers||{});
+  if(opts.body && !headers['content-type']) headers['content-type']='application/json';
+  const r = await fetch(CMS_API+path, {method:opts.method||'GET', headers, body:opts.body});
+  if(r.status===401){
+    const ok = await cmsRefresh();
+    if(ok) return cmsFetch(path, opts);
+    throw new Error('관리자 권한이 없거나 세션이 만료되었습니다');
+  }
+  if(!r.ok) throw new Error('요청 실패 ('+r.status+')');
+  const t = await r.text();
+  try{ return t ? JSON.parse(t) : {}; }catch(e){ return {}; }
+}
+async function cmsLoadAll(){
+  state.cmsLoading = true; render();
+  try{
+    // 공개 API로 현재 노출 중인 내용을 우선 확보 (관리자 스키마와 동일 형태)
+    let site = null;
+    try{ site = await cmsFetch('/api/v1/admin/site'); }
+    catch(e){
+      const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'}});
+      site = r.ok ? await r.json() : null;
+      if(!site) throw e;
+    }
+    cmsData = site;
+    try{ cmsInquiries = await cmsFetch('/api/v1/admin/inquiries'); }catch(e){ cmsInquiries = null; }
+    state.cmsErr = null;
+  }catch(e){
+    state.cmsErr = e.message;
+  }finally{
+    state.cmsLoading = false; render();
+  }
+}
+async function cmsSaveSite(){
+  if(!cmsData) return;
+  const btn = document.getElementById('cmsSaveBtn');
+  if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
+  try{
+    await cmsFetch('/api/v1/admin/site', {method:'PUT', body:JSON.stringify(cmsData)});
+    toast('홈페이지에 반영했어요','ok');
+    logActivity('홈페이지 콘텐츠 수정 (CMS)', '변경');
+    state.cmsErr = null;
+  }catch(e){
+    // PUT 이 아니면 POST 로 한 번 더 시도 (Worker 구현 차이 대응)
+    try{
+      await cmsFetch('/api/v1/admin/site', {method:'POST', body:JSON.stringify(cmsData)});
+      toast('홈페이지에 반영했어요','ok');
+      logActivity('홈페이지 콘텐츠 수정 (CMS)', '변경');
+      state.cmsErr = null;
+    }catch(e2){
+      state.cmsErr = e2.message;
+      toast('저장 실패: '+e2.message,'warn');
+    }
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='💾 홈페이지에 반영'; }
+    render();
+  }
+}
+
+/* ---------- 값 읽기/쓰기 도우미 ---------- */
+function cmsGet(path, dflt){
+  const parts = path.split('.');
+  let v = cmsData;
+  for(const p of parts){ if(v==null) return dflt; v = v[p]; }
+  return (v==null || v==='') ? (dflt===undefined?'':dflt) : v;
+}
+function cmsSet(path, val){
+  const parts = path.split('.');
+  let o = cmsData;
+  for(let i=0;i<parts.length-1;i++){
+    if(!o[parts[i]] || typeof o[parts[i]]!=='object') o[parts[i]]={};
+    o = o[parts[i]];
+  }
+  o[parts[parts.length-1]] = val;
+}
+
+/* ---------- 화면 ---------- */
+function renderWebsiteAdmin(){
+  if(!cmsSession) cmsSession = cmsLoadSession();
+
+  // 1) 로그인 전
+  if(!cmsSession){
+    return `
+      <div class="topbar"><h1>🌐 홈페이지 관리</h1></div>
+      <div class="aic-sub">ERP에서 홈페이지 내용을 직접 수정합니다. GitHub 파일을 건드리지 않습니다.</div>
+      <div class="panel" style="max-width:520px">
+        <h2>관리자 로그인</h2>
+        <div class="aic-sub" style="margin:-8px 0 14px">등록된 관리자 이메일로 인증번호를 보냅니다.</div>
+        <div class="field">
+          <label>관리자 이메일</label>
+          <input type="email" id="cmsEmail" placeholder="dmswl1701@gmail.com" value="${esc(state.cmsEmail||'')}" autocomplete="email">
+        </div>
+        ${state.cmsCodeSent ? `
+        <div class="field">
+          <label>이메일로 받은 6자리 인증번호</label>
+          <input type="text" id="cmsCode" placeholder="000000" inputmode="numeric" maxlength="8">
+        </div>
+        <div class="aic-dm-ok" style="font-size:12px">메일이 안 보이면 스팸함을 확인해 주세요. 링크가 아니라 <b>숫자 코드</b>를 입력하시면 됩니다.</div>
+        <div class="modal-actions" style="position:static;border:0;padding-top:14px">
+          <button type="button" class="btn secondary" id="cmsResend">코드 다시 받기</button>
+          <button type="button" class="btn" id="cmsVerifyBtn">인증하고 로그인</button>
+        </div>` : `
+        <div class="modal-actions" style="position:static;border:0;padding-top:6px">
+          <button type="button" class="btn" id="cmsSendBtn">인증번호 받기</button>
+        </div>`}
+        ${state.cmsErr? `<div class="aic-dm-warn" style="margin-top:12px">${esc(state.cmsErr)}</div>`:''}
+      </div>`;
+  }
+
+  // 2) 로그인 후 — 데이터 로딩
+  if(!cmsData && !state.cmsLoading && !state.cmsErr){ setTimeout(cmsLoadAll, 10); }
+  if(state.cmsLoading){
+    return `<div class="topbar"><h1>🌐 홈페이지 관리</h1></div>
+      <div class="panel"><div class="empty">홈페이지 내용을 불러오는 중이에요...</div></div>`;
+  }
+  if(state.cmsErr && !cmsData){
+    return `<div class="topbar"><h1>🌐 홈페이지 관리</h1>
+        <button type="button" class="btn secondary" id="cmsLogout">로그아웃</button></div>
+      <div class="panel">
+        <div class="aic-dm-warn">${esc(state.cmsErr)}</div>
+        <div class="aic-sub" style="margin-top:12px">로그인한 계정: <b>${esc(cmsSession.email||'')}</b><br>
+        이 계정이 Cloudflare Worker의 <code>ADMIN_EMAILS</code>에 등록되어 있어야 합니다.</div>
+        <div class="modal-actions" style="position:static;border:0;padding-top:14px">
+          <button type="button" class="btn" id="cmsRetry">다시 시도</button>
+        </div>
+      </div>`;
+  }
+  if(!cmsData) return `<div class="topbar"><h1>🌐 홈페이지 관리</h1></div><div class="panel"><div class="empty">불러오지 못했어요.</div></div>`;
+
+  const tab = state.cmsTab || 'content';
+  const T = (id,label)=>`<div class="chip ${tab===id?'active':''} cmsTab" data-t="${id}">${label}</div>`;
+
+  let body = '';
+  if(tab==='content'){
+    body = `
+    <div class="panel">
+      <h2>대표 배너 (Hero)</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 첫 화면 문구입니다. 배경 사진은 아래 "Hero 이미지"에서 바꿉니다.</div>
+      <div class="field"><label>상단 작은 문구</label>
+        <input type="text" class="cmsIn" data-p="banner.eyebrow" value="${esc(cmsGet('banner.eyebrow'))}" placeholder="사인 기획 · 제작 · 현장 시공"></div>
+      <div class="field"><label>큰 제목 (줄바꿈으로 구분 · 2번째 줄이 전구색으로 빛납니다)</label>
+        <textarea class="cmsIn" data-p="banner.title" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.title'))}</textarea></div>
+      <div class="field"><label>설명 문구</label>
+        <textarea class="cmsIn" data-p="banner.description" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.description'))}</textarea></div>
+      <div class="field"><label>Hero 이미지 주소 (비워두면 기본 사진 사용)</label>
+        <input type="text" class="cmsIn" data-p="banner.heroImageUrl" value="${esc(cmsGet('banner.heroImageUrl'))}" placeholder="https://... (https 주소만 적용됩니다)"></div>
+    </div>
+
+    <div class="panel">
+      <h2>회사 정보</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 문의 페이지·푸터에 표시됩니다.</div>
+      <div class="field"><label>회사명</label>
+        <input type="text" class="cmsIn" data-p="company.name" value="${esc(cmsGet('company.name'))}"></div>
+      <div class="field"><label>대표 전화</label>
+        <input type="text" class="cmsIn" data-p="company.phone" value="${esc(cmsGet('company.phone'))}"></div>
+      <div class="field"><label>영업시간</label>
+        <input type="text" class="cmsIn" data-p="company.hours" value="${esc(cmsGet('company.hours'))}"></div>
+      <div class="field"><label>주소</label>
+        <input type="text" class="cmsIn" data-p="company.address" value="${esc(cmsGet('company.address'))}"></div>
+      <div class="field"><label>회사 소개 한 줄</label>
+        <textarea class="cmsIn" data-p="company.introduction" rows="2" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('company.introduction'))}</textarea></div>
+    </div>`;
+  }
+
+  if(tab==='services'){
+    const list = Array.isArray(cmsData.services)? cmsData.services : [];
+    body = `
+    <div class="panel">
+      <h2>사인 종류 (${list.length})</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "사인 종류" 페이지에 순서대로 표시됩니다.</div>
+      ${list.map((s,i)=>`
+        <div class="cms-row">
+          <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
+          <input type="text" class="cmsSvcName" data-i="${i}" value="${esc(s.name||'')}" placeholder="이름 (예: 채널레터)">
+          <input type="text" class="cmsSvcText" data-i="${i}" value="${esc(s.text||'')}" placeholder="설명">
+          <button type="button" class="aic-btn aic-btn-rej cmsSvcDel" data-i="${i}">삭제</button>
+        </div>`).join('') || '<div class="empty">등록된 항목이 없어요.</div>'}
+      <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsSvcAdd">+ 항목 추가</button></div>
+    </div>
+
+    <div class="panel">
+      <h2>진행 절차 (${(cmsData.process||[]).length})</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "프로세스" 페이지에 단계별로 표시됩니다.</div>
+      ${(cmsData.process||[]).map((p,i)=>`
+        <div class="cms-row">
+          <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
+          <input type="text" class="cmsPrc" data-i="${i}" value="${esc(p||'')}" placeholder="단계 이름" style="flex:1">
+          <button type="button" class="aic-btn aic-btn-rej cmsPrcDel" data-i="${i}">삭제</button>
+        </div>`).join('') || '<div class="empty">등록된 단계가 없어요.</div>'}
+      <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsPrcAdd">+ 단계 추가</button></div>
+    </div>`;
+  }
+
+  if(tab==='portfolio'){
+    const list = Array.isArray(cmsData.featuredProjects)? cmsData.featuredProjects : [];
+    body = `
+    <div class="panel">
+      <h2>시공사례 (${list.length})</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "시공사례" 페이지에 표시됩니다. 사진은 https 주소를 넣어주세요.</div>
+      ${list.map((p,i)=>`
+        <div class="panel" style="background:#FAFBFD;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <b style="color:var(--navy)">${String(i+1).padStart(2,'0')}</b>
+            <button type="button" class="aic-btn aic-btn-rej cmsPjDel" data-i="${i}">삭제</button>
+          </div>
+          <div class="field"><label>제목</label><input type="text" class="cmsPj" data-i="${i}" data-f="title" value="${esc(p.title||'')}" placeholder="워시팡팡 셀프빨래방"></div>
+          <div class="field"><label>분류</label><input type="text" class="cmsPj" data-i="${i}" data-f="category" value="${esc(p.category||'')}" placeholder="SELF LAUNDRY"></div>
+          <div class="field"><label>설명</label><input type="text" class="cmsPj" data-i="${i}" data-f="summary" value="${esc(p.summary||'')}" placeholder="1호점부터 이어진 다수 매장 시공"></div>
+          <div class="field"><label>대표 사진 주소</label><input type="text" class="cmsPj" data-i="${i}" data-f="coverImageUrl" value="${esc(p.coverImageUrl||'')}" placeholder="https://..."></div>
+        </div>`).join('') || '<div class="empty">등록된 시공사례가 없어요. 아래에서 추가하세요.</div>'}
+      <button type="button" class="aic-btn" id="cmsPjAdd">+ 시공사례 추가</button>
+    </div>`;
+  }
+
+  if(tab==='seo'){
+    body = `
+    <div class="panel">
+      <h2>검색 최적화 (SEO)</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px">검색 결과에 보이는 제목·설명입니다.</div>
+      <div class="field"><label>사이트 제목</label>
+        <input type="text" class="cmsIn" data-p="seo.title" value="${esc(cmsGet('seo.title'))}" placeholder="HM SIGN | 인천 간판 제작·시공"></div>
+      <div class="field"><label>사이트 설명</label>
+        <textarea class="cmsIn" data-p="seo.description" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('seo.description'))}</textarea></div>
+      <div class="field"><label>대표 키워드 (쉼표로 구분)</label>
+        <input type="text" class="cmsIn" data-p="seo.keywords" value="${esc(cmsGet('seo.keywords'))}" placeholder="인천 간판, 채널레터, LED 사인"></div>
+      <div class="aic-dm-warn" style="margin-top:8px">현재 홈페이지는 <b>검색엔진 비공개</b> 상태입니다(<code>robots.txt</code> 차단). 정식 도메인 연결 후 해제해야 검색에 노출됩니다.</div>
+    </div>`;
+  }
+
+  if(tab==='inquiry'){
+    const list = Array.isArray(cmsInquiries) ? cmsInquiries
+               : (cmsInquiries && Array.isArray(cmsInquiries.items) ? cmsInquiries.items : null);
+    body = `
+    <div class="panel">
+      <h2>홈페이지 문의함 ${list?'('+list.length+')':''}</h2>
+      ${list===null
+        ? `<div class="aic-dm-warn">문의 목록을 불러오지 못했습니다. Worker의 <code>/api/v1/admin/inquiries</code> 응답 형식을 확인해야 합니다.</div>`
+        : list.length===0
+          ? '<div class="empty">접수된 문의가 없어요.</div>'
+          : `<table><thead><tr><th>접수</th><th>성함</th><th>연락처</th><th>회사·매장</th><th>요청</th><th>내용</th></tr></thead><tbody>
+             ${list.map(q=>`<tr>
+               <td data-l="접수">${esc((q.createdAt||q.created_at||'').toString().slice(0,16).replace('T',' '))}</td>
+               <td data-l="성함">${esc(q.name||'')}</td>
+               <td data-l="연락처">${esc(q.phone||'')}</td>
+               <td data-l="회사">${esc(q.company||'')}</td>
+               <td data-l="요청">${esc(q.serviceType||q.service||'')}</td>
+               <td data-l="내용" style="white-space:pre-wrap">${esc((q.message||'').slice(0,120))}</td>
+             </tr>`).join('')}
+             </tbody></table>`}
+    </div>`;
+  }
+
+  return `
+    <div class="topbar"><h1>🌐 홈페이지 관리</h1>
+      <span style="display:flex;gap:8px;align-items:center">
+        <a class="btn secondary" href="${CMS_SITE}" target="_blank" rel="noopener">홈페이지 보기 ↗</a>
+        <button type="button" class="btn" id="cmsSaveBtn">💾 홈페이지에 반영</button>
+      </span>
+    </div>
+    <div class="aic-sub">${esc(cmsSession.email||'')} 로 로그인됨 · 저장하면 홈페이지에 즉시 반영됩니다.
+      <a href="#" id="cmsLogout" style="color:var(--navy);margin-left:8px">로그아웃</a></div>
+    ${state.cmsErr? `<div class="aic-dm-warn" style="margin-bottom:14px">${esc(state.cmsErr)}</div>`:''}
+    <div class="chips">
+      ${T('content','대표 배너·회사정보')}${T('services','사인 종류·절차')}${T('portfolio','시공사례')}${T('seo','SEO')}${T('inquiry','문의함')}
+    </div>
+    ${body}`;
+}
+
+/* ---------- 이벤트 바인딩 ---------- */
+function bindWebsiteAdmin(){
+  // 로그인
+  const sendBtn=document.getElementById('cmsSendBtn'), resend=document.getElementById('cmsResend');
+  const doSend = async ()=>{
+    const el=document.getElementById('cmsEmail');
+    const email=(el?el.value:'').trim();
+    if(!email){ toast('이메일을 입력해 주세요','warn'); if(el) el.focus(); return; }
+    state.cmsEmail=email; state.cmsErr=null;
+    const b=sendBtn||resend; if(b){ b.disabled=true; b.textContent='보내는 중...'; }
+    try{
+      await cmsSendCode(email);
+      state.cmsCodeSent=true;
+      toast(email+' 로 인증번호를 보냈어요','ok');
+    }catch(e){ state.cmsErr='인증번호 발송 실패: '+e.message; }
+    render();
+  };
+  if(sendBtn) sendBtn.addEventListener('click', doSend);
+  if(resend) resend.addEventListener('click', doSend);
+
+  const vBtn=document.getElementById('cmsVerifyBtn');
+  if(vBtn) vBtn.addEventListener('click', async ()=>{
+    const code=(document.getElementById('cmsCode')||{}).value||'';
+    if(!code.trim()){ toast('인증번호를 입력해 주세요','warn'); return; }
+    vBtn.disabled=true; vBtn.textContent='확인 중...';
+    try{
+      await cmsVerifyCode(state.cmsEmail, code.trim());
+      state.cmsCodeSent=false; state.cmsErr=null; cmsData=null;
+      toast('로그인했어요','ok');
+    }catch(e){ state.cmsErr='인증 실패: '+e.message; }
+    render();
+  });
+
+  const lo=document.getElementById('cmsLogout');
+  if(lo) lo.addEventListener('click', e=>{ e.preventDefault(); cmsLogout(); });
+  const rt=document.getElementById('cmsRetry');
+  if(rt) rt.addEventListener('click', ()=>{ state.cmsErr=null; cmsData=null; cmsLoadAll(); });
+
+  // 탭
+  document.querySelectorAll('.cmsTab').forEach(el=> el.addEventListener('click', ()=>{ state.cmsTab=el.dataset.t; render(); }));
+
+  // 단순 필드 (blur 시 반영 — 입력 중 리렌더 방지)
+  document.querySelectorAll('.cmsIn').forEach(el=> el.addEventListener('change', ()=>{ cmsSet(el.dataset.p, el.value); }));
+
+  // 서비스
+  document.querySelectorAll('.cmsSvcName').forEach(el=> el.addEventListener('change', ()=>{ cmsData.services[+el.dataset.i].name = el.value; }));
+  document.querySelectorAll('.cmsSvcText').forEach(el=> el.addEventListener('change', ()=>{ cmsData.services[+el.dataset.i].text = el.value; }));
+  document.querySelectorAll('.cmsSvcDel').forEach(el=> el.addEventListener('click', ()=>{ cmsData.services.splice(+el.dataset.i,1); render(); }));
+  const sa=document.getElementById('cmsSvcAdd');
+  if(sa) sa.addEventListener('click', ()=>{ cmsData.services=cmsData.services||[]; cmsData.services.push({name:'',text:''}); render(); });
+
+  // 프로세스
+  document.querySelectorAll('.cmsPrc').forEach(el=> el.addEventListener('change', ()=>{ cmsData.process[+el.dataset.i] = el.value; }));
+  document.querySelectorAll('.cmsPrcDel').forEach(el=> el.addEventListener('click', ()=>{ cmsData.process.splice(+el.dataset.i,1); render(); }));
+  const pa=document.getElementById('cmsPrcAdd');
+  if(pa) pa.addEventListener('click', ()=>{ cmsData.process=cmsData.process||[]; cmsData.process.push(''); render(); });
+
+  // 포트폴리오
+  document.querySelectorAll('.cmsPj').forEach(el=> el.addEventListener('change', ()=>{
+    cmsData.featuredProjects[+el.dataset.i][el.dataset.f] = el.value;
+  }));
+  document.querySelectorAll('.cmsPjDel').forEach(el=> el.addEventListener('click', ()=>{
+    if(!confirm('이 시공사례를 삭제할까요?')) return;
+    cmsData.featuredProjects.splice(+el.dataset.i,1); render();
+  }));
+  const ja=document.getElementById('cmsPjAdd');
+  if(ja) ja.addEventListener('click', ()=>{
+    cmsData.featuredProjects=cmsData.featuredProjects||[];
+    cmsData.featuredProjects.push({title:'',category:'',summary:'',coverImageUrl:''});
+    render();
+  });
+
+  // 저장
+  const sv=document.getElementById('cmsSaveBtn');
+  if(sv) sv.addEventListener('click', cmsSaveSite);
+}
+// ===== AI 회사 (실무 연동) =====
+// 핵심: ERP가 가진 실제 데이터(거래처·견적·사진·미수금)를 넣어 "바로 붙여넣을 업무 지시서"를 만든다.
+// 대표는 [업무 지시서 복사] → Claude 채팅에 붙여넣기 → 결과를 [결과 등록]으로 다시 저장.
+// 가짜 진행률·가짜 로그·가짜 게시는 만들지 않는다. 실제 등록된 결과물만 다룬다.
+// 결과물은 state.aiDocs에 저장되어 기존 클라우드 동기화로 그대로 백업된다 (신규 테이블 없음).
+const AIC_TEAMS = [
+  {id:'research', icon:'🔍', name:'영업조사 AI', role:'신규 거래처·상권·경쟁사 조사',
+    automated:true, schedule:'매주 월요일 오전 9시 자동 실행',
+    routineUrl:'https://claude.ai/code/routines/trig_01VGsrcXJfMtpDRKjfqooKfA',
+    out:'거래처 조사 리포트 (담당자·연락처·영업포인트·예상매출·출처)'},
+  {id:'proposal', icon:'📝', name:'제안서 AI', role:'조사 결과 기반 제안서 작성',
+    automated:false, out:'제안서 (회사명·견적·공정·일정 반영)'},
+  {id:'portfolio', icon:'🖼', name:'포트폴리오 AI', role:'사진첩 기반 업체별 포트폴리오',
+    automated:false, out:'업체별 포트폴리오 (시공전/후·자재·효과)'},
+  {id:'content', icon:'🎯', name:'콘텐츠 운영 AI', role:'블로그·인스타·릴스·플레이스',
+    automated:false, out:'블로그 / 카드뉴스 / 릴스 대본 / 플레이스 글'},
+  {id:'law', icon:'⚖️', name:'법규 AI', role:'옥외광고물법·지자체 조례·허가',
+    automated:false, out:'법규 조사 리포트 (출처 필수)'},
+  {id:'buy', icon:'📦', name:'구매조사 AI', role:'국내·중국 제작업체 가격·납기 비교',
+    automated:false, out:'업체 비교 리포트 (가격·납기·MOQ·장단점)'},
+  {id:'secretary', icon:'👨', name:'대표비서 AI', role:'승인·일정·알림 취합 브리핑',
+    automated:false, out:'대표 브리핑 (ERP 실데이터 자동 집계)'},
+];
+function aicTeam(id){ return AIC_TEAMS.find(t=>t.id===id); }
+function aicTimeStr(d){ const h=String(d.getHours()).padStart(2,'0'), m=String(d.getMinutes()).padStart(2,'0'); return h+':'+m; }
+function aicFileIcon(type){ return {pdf:'📕', xlsx:'📗', docx:'📘', md:'📄', txt:'📄'}[type] || '📄'; }
+const AIC_HIST_ICON = {created:'📄', revise:'✏', reject:'❌', rework:'🔄', approved:'✅'};
+function aicHist(doc, kind, text){
+  if(!doc.history) doc.history=[];
+  doc.history.push({at:aicTimeStr(new Date()), kind, text});
+}
+function aicSaveDocs(){
+  store.set('aiDocs', state.aiDocs).catch(()=>{});
+  scheduleCloudPush();
+}
+
+/* ===== ERP 실데이터 → 업무 지시서 생성 =====
+   대표가 직접 타이핑할 필요 없이, ERP가 가진 진짜 데이터를 채워서 지시서를 만든다. */
+const AIC_COMPANY_BRIEF = `[회사 정보]
+- HM인테리어 (인천 기반 가족 경영, 간판 디자인·제작·시공·A/S 원스톱)
+- 연매출 약 3억원 규모의 소기업
+- 주요 거래처: 위시팡팡 셀프빨래방(약 60%), 올인베이커리 체인(약 25%), 기타(15%)
+- 최우선 과제: 체인 2곳 의존도 85% → 신규 거래처 발굴로 매출 분산
+
+[반드시 지킬 원칙]
+- 추측하지 마세요. 없는 업체·담당자·연락처·법규를 만들어내지 마세요.
+- 모든 조사 결과에 출처(공식 홈페이지/뉴스/공공데이터 링크)와 확인 시각을 붙이세요.
+- 확인 안 되는 내용은 "확인 불가" 또는 "추가 검증 필요"로 표시하세요.
+- 소기업 현실에 맞게. 대기업식 제안·과도한 비용 전제 금지.
+- 바로 실무에 쓸 수 있는 완성도로 작성하세요 (뼈대·예시 수준 금지).`;
+
+function aicErpContext(){
+  const qs = state.quotes||[], cs = state.clients||[];
+  const contracted = qs.filter(q=>q.status==='계약'||q.status==='시공완료');
+  const done = qs.filter(q=>q.status==='시공완료');
+  const unpaid = contracted.map(q=>({q, bal: quoteTotal(q)-paidTotal(getPayment(q.id))})).filter(x=>x.bal>0);
+  const chains = {};
+  cs.forEach(c=>{ const k=c.chain||'기타'; chains[k]=(chains[k]||0)+1; });
+  return {qs, cs, contracted, done, unpaid, chains};
+}
+function aicRecentSites(n){
+  const c = aicErpContext();
+  return c.done.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,n||8);
+}
+// 각 AI별 업무 지시서 본문 (ERP 실데이터 주입)
+function aicBuildPrompt(teamId){
+  const t = aicTeam(teamId); if(!t) return '';
+  const c = aicErpContext();
+  const today = todayStr();
+  const head = `당신은 HM인테리어의 ${t.name}입니다. 담당 업무: ${t.role}\n작성일: ${today}\n\n${AIC_COMPANY_BRIEF}\n`;
+
+  if(teamId==='research'){
+    const existing = c.cs.map(x=>x.name).slice(0,60);
+    return head + `
+[이미 거래 중인 곳 — 중복 조사 제외]
+${existing.length? existing.join(', ') : '(등록된 거래처 없음)'}
+
+[요청]
+인천·수도권 기준으로 아래를 조사해 주세요. 웹 검색을 실제로 사용하세요.
+1) 신규 오픈 예정/최근 오픈한 프랜차이즈 매장
+2) 다점포 확장 중인 프랜차이즈 본사 (신규 가맹점 = 반복 수주)
+3) 신규 건축물·신규 상권 (검단·청라·송도 등 신도시 상가 분양/입주)
+4) 경쟁사 동향 (인천 간판업체)
+5) 기존 거래처 중 재영업 대상 추천
+
+[출력 형식]
+각 후보마다:
+- 업체명 / 업종 / 지역
+- 담당 부서 (공개된 가맹문의·구매 담당 채널)
+- 연락처 (공식 홈페이지에 공개된 것만. 없으면 "확인 불가")
+- 영업 포인트 (왜 지금 접근해야 하는지)
+- 예상 매출 (근거와 함께)
+- 계약 가능성 (상/중/하 + 이유)
+- 출처 URL + 확인 시각
+
+마지막에 "이번 주 액션" 3가지로 정리해 주세요.`;
+  }
+
+  if(teamId==='proposal'){
+    const recent = c.qs.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+    return head + `
+[최근 견적 데이터 — 단가·품목 참고용]
+${recent.length? recent.map(q=>`- ${q.date} ${q.client} / ${q.item||'-'} / ${fmt(linesTotal(q))}`).join('\n') : '(견적 없음)'}
+
+[자주 쓰는 품목 단가]
+${(state.items||[]).slice(0,15).map(i=>`- ${i.name} ${i.spec?'('+i.spec+')':''} : ${fmt(i.price||0)} /${i.unit||'개'}`).join('\n') || '(품목 없음)'}
+
+[요청]
+아래 대상에게 보낼 제안서를 작성해 주세요.
+※ 대상 업체명과 조사 내용은 이 아래에 직접 붙여넣어 주세요:
+──────────────────────
+(여기에 영업조사 AI 결과 또는 대상 업체 정보를 붙여넣기)
+──────────────────────
+
+[제안서 구성 — 이 순서를 지킬 것]
+1. 표지 (제안 대상·제출일·HM인테리어)
+2. 목차
+3. 회사 소개 (전 공정 자체 수행이 핵심 차별점)
+4. 현황 분석 (대상 업체가 겪을 문제 3가지)
+5. 솔루션 (디자인/제작/시공/허가/A-S 범위 + 표준 일정)
+6. 시공 사례 (올인베이커리 다점포, 위시팡팡 야간 시인성)
+7. 기대 효과 (현재 vs 도입 후 비교표)
+8. 견적 기준 (위 실제 단가 참고, 표준 매장 250~400만원)
+9. 진행 절차 및 문의
+
+표·강조박스를 사용해 실제 기업 제안서 수준으로 작성하세요.`;
+  }
+
+  if(teamId==='portfolio'){
+    const sites = aicRecentSites(10);
+    return head + `
+[사진첩에 등록된 시공 완료 현장]
+${sites.length? sites.map(q=>{
+  const inst=getInstall(q.id);
+  return `- ${q.client} / ${q.region||'-'} / ${q.item||'-'} / 사진 ${inst.photoCount||0}장 / ${q.date}`;
+}).join('\n') : '(시공완료 현장 없음 — 먼저 작업관리에서 시공완료 처리하고 사진첩에 사진을 올려주세요)'}
+
+[요청]
+위 현장 중 하나를 골라 포트폴리오 페이지를 작성해 주세요.
+※ 사진은 제가 사진첩에서 직접 첨부하겠습니다. 사진이 들어갈 자리를 [사진: 설명] 형태로 표시해 주세요.
+
+[구성]
+- 표지 (프로젝트명)
+- 프로젝트 개요 (고객사/시공유형/지역/공기) — 표로
+- 시공 전 (문제 상황) + [사진 자리]
+- 시공 후 (개선 결과) + [사진 자리: 주간 / 야간]
+- 사용 자재 (표)
+- 제작 과정 (단계별)
+- 고객 효과 (구체적으로)
+- HM SIGN 소개 / 문의
+
+과장 없이, 실제 있었던 일만 쓰세요. 모르는 부분은 저에게 질문해 주세요.`;
+  }
+
+  if(teamId==='content'){
+    const sites = aicRecentSites(6);
+    return head + `
+[최근 시공 완료 현장 — 콘텐츠 소재]
+${sites.length? sites.map(q=>`- ${q.client} / ${q.region||'-'} / ${q.item||'-'} / ${q.date}`).join('\n') : '(시공완료 현장 없음)'}
+
+[요청]
+위 현장 하나를 소재로 아래를 모두 작성해 주세요.
+
+1) 네이버 블로그 글
+   - 네이버 SEO를 고려한 제목 (검색될 만한 실제 키워드)
+   - 소제목으로 구분된 본문 (1500자 이상)
+   - 사진 배치 위치 표시 [사진: 설명]
+   - 마무리 + CTA + 해시태그
+   - AI 문체 금지. 실제 간판업체 사장이 쓴 것처럼 담백하게.
+
+2) 인스타 카드뉴스 (5~7장)
+   - 장별 문구 (짧고 굵게)
+   - 캡션 + 해시태그
+
+3) 릴스 대본 (15~30초)
+   - 사진/영상 순서
+   - 장면 전환 타이밍
+   - 자막 (초 단위)
+   - 음악 톤 추천
+
+4) 네이버 플레이스 게시글 (짧게)
+
+모두 바로 복사해서 올릴 수 있는 완성본으로 작성하세요.`;
+  }
+
+  if(teamId==='law'){
+    const regions = [...new Set((state.quotes||[]).map(q=>q.region).filter(Boolean))].slice(0,10);
+    return head + `
+[우리가 주로 시공하는 지역]
+${regions.length? regions.join(', ') : '인천 전역'}
+
+[요청]
+아래를 조사해 주세요. 반드시 공식 자료만 사용하고 출처 링크를 붙이세요.
+- 옥외광고물 등의 관리와 옥외광고산업 진흥에 관한 법률 (현행 기준)
+- 위 지역 지자체 조례 (인천광역시 및 해당 구)
+- 허가 대상 vs 신고 대상 구분
+- 간판 종류별 규격 제한 (가로형/돌출형/지주형 등)
+- 설치 금지 구역·제한 사항
+- 위반 시 과태료
+- 최근 개정 사항 (있으면)
+
+[출력 형식]
+항목별로: 근거 조문 → 실무상 의미 → 우리가 주의할 점 → 출처 URL + 확인 시각
+
+법령은 개정되므로, 확인이 안 되거나 애매한 부분은 반드시 "추가 검증 필요"로 표시하고
+관할 구청 문의를 권고해 주세요. 추측으로 답하지 마세요.`;
+  }
+
+  if(teamId==='buy'){
+    const items = (state.items||[]).slice(0,20);
+    return head + `
+[우리가 자주 쓰는 자재·품목]
+${items.length? items.map(i=>`- ${i.name} ${i.spec?'('+i.spec+')':''} / 현재 단가 ${fmt(i.price||0)}`).join('\n') : '(등록된 품목 없음)'}
+
+[요청]
+위 자재를 공급받을 수 있는 업체를 조사해 주세요.
+1) 국내 간판 자재·제작 업체
+2) 중국 제조사 (알리바바 등 공개 정보)
+
+[비교 항목]
+- 업체명 / 소재지
+- 취급 품목
+- 가격대 (현재 우리 단가와 비교)
+- 납기
+- MOQ (최소 주문 수량)
+- 후기·평판 (확인 가능한 것만)
+- 장점 / 단점
+- 출처 URL + 확인 시각
+
+마지막에 "우리 규모(연매출 3억, 소량 다품종)에 맞는 추천 3곳"과 그 이유를 정리해 주세요.
+확인 안 된 가격은 절대 지어내지 말고 "확인 불가 — 직접 문의 필요"로 표시하세요.`;
+  }
+
+  if(teamId==='secretary'){
+    return head + `
+[요청]
+아래 ERP 실데이터를 바탕으로 대표님 브리핑을 작성해 주세요.
+
+${aicMorningData()}
+
+[출력 형식]
+1. 오늘의 핵심 (3줄 이내)
+2. 오늘 해야 할 일 (우선순위 순, "무엇을 언제 누가"까지)
+3. 승인 대기 목록
+4. 주의 알림 (마감 임박·연체·보증 만료 등)
+5. 이번 주 추천 업무
+
+간결하게. 대표가 30초 안에 읽고 움직일 수 있게 작성하세요.`;
+  }
+  return head;
+}
+// 대표 브리핑용 실데이터 집계 (AI 없이 ERP 데이터만으로 생성)
+function aicMorningData(){
+  const c = aicErpContext();
+  const today = todayStr();
+  const L=[];
+  L.push('[오늘 날짜] '+today);
+  L.push('');
+  L.push('[견적 현황]');
+  L.push('- 전체 견적 '+c.qs.length+'건 / 계약 '+c.contracted.length+'건 / 시공완료 '+c.done.length+'건');
+  const pendingQ = c.qs.filter(q=>q.status==='견적발송');
+  L.push('- 발송 후 미회신 견적: '+pendingQ.length+'건'+(pendingQ.length? ' ('+pendingQ.slice(0,5).map(q=>q.client+' '+q.date).join(', ')+')':''));
+  L.push('');
+  L.push('[미수금]');
+  if(c.unpaid.length){
+    const tot = c.unpaid.reduce((s,x)=>s+x.bal,0);
+    L.push('- 총 미수 '+fmt(tot)+' / '+c.unpaid.length+'건');
+    c.unpaid.slice(0,8).forEach(x=> L.push('  · '+x.q.client+' : '+fmt(x.bal)+' (견적일 '+x.q.date+')'));
+  } else L.push('- 미수금 없음');
+  L.push('');
+  L.push('[오늘 일정]');
+  const todayEv = (state.events||[]).filter(e=>e.startDate===today && !e.done);
+  const todayInst = c.contracted.filter(q=>getJob(q.id).installDate===today);
+  if(todayEv.length||todayInst.length){
+    todayInst.forEach(q=> L.push('  · [설치] '+q.client+' '+(q.region||'')));
+    todayEv.forEach(e=> L.push('  · ['+(e.cat||'일정')+'] '+(e.title||'')));
+  } else L.push('- 등록된 일정 없음');
+  L.push('');
+  L.push('[A/S 미완료]');
+  const openAs=(state.asList||[]).filter(a=>!a.done);
+  L.push('- '+openAs.length+'건'+(openAs.length? ' ('+openAs.slice(0,5).map(a=>a.client||a.title||'').join(', ')+')':''));
+  L.push('');
+  L.push('[AI 결과물 승인 대기]');
+  const pd = aicPendingDocs();
+  if(pd.length) pd.forEach(d=> L.push('  · '+d.name+' ('+d.staffName+')'));
+  else L.push('- 없음');
+  return L.join('\n');
+}
+
+let aicDocSeq = 0;
+function aicMakeDoc(team, name, type, body, needsApproval){
+  aicDocSeq++;
+  const at = aicTimeStr(new Date());
+  const doc = {
+    id: 'aicdoc'+Date.now()+'_'+aicDocSeq,
+    staffId: team.id, staffIcon: team.icon, staffName: team.name,
+    name, type, needsApproval: !!needsApproval,
+    status: needsApproval ? 'draft' : 'done',
+    createdAt: at, createdDate: todayStr(), curV: 0,
+    versions: [{v:'V1', at, body, note:'등록'}],
+    history: [{at, kind:'created', text:'결과물 등록'}],
+  };
+  state.aiDocs.unshift(doc);
+  aicSaveDocs();
+  return doc;
+}
+function aicDocById(id){ return (state.aiDocs||[]).find(d=>d.id===id); }
+function aicTeamDocs(teamId){ return (state.aiDocs||[]).filter(d=>d.staffId===teamId); }
+function aicPendingDocs(){ return (state.aiDocs||[]).filter(d=> d.needsApproval && d.status==='draft'); }
+function aicDocAction(d){
+  const n=d.name;
+  if(/메일|콜드메일|연락/.test(n)) return '발송';
+  if(/블로그|인스타|릴스|플레이스|카드뉴스|SNS|쇼츠/.test(n)) return '게시';
+  if(/제안서/.test(n)) return '발송';
+  return '실행';
+}
+function aicDocBadge(d){
+  if(d.status==='rejected') return {cls:'rej', label:'반려됨'};
+  if(!d.needsApproval) return {cls:'auto', label:'승인 불필요'};
+  return d.status==='approved' ? {cls:'done', label:'승인됨'} : {cls:'wait', label:'승인 대기'};
+}
+function aicDocRowHtml(d, compact){
+  const b = aicDocBadge(d);
+  return `<div class="aic-doc ${d.needsApproval&&d.status==='draft'?'pending':''}" data-doc="${d.id}">
+    <span class="aic-doc-ic">${aicFileIcon(d.type)}</span>
+    <span class="aic-doc-name">${esc(d.name)}</span>
+    ${d.versions.length>1?`<span class="aic-doc-ver">${esc(d.versions[d.curV].v)}</span>`:''}
+    <span class="aic-badge ${b.cls}">${b.label}</span>
+    ${compact?'':`<span class="aic-doc-time">${esc(d.createdAt)}</span>`}
+  </div>`;
+}
+function aicSummaryHtml(){
+  const docs = state.aiDocs||[];
+  const pend = aicPendingDocs().length;
+  const approved = docs.filter(d=>d.status==='approved').length;
+  return `
+    <div class="aic-stat ${pend?'hot':''}"><div class="aic-stat-v">${pend}</div><div class="aic-stat-l">승인 대기</div></div>
+    <div class="aic-stat"><div class="aic-stat-v">${docs.length}</div><div class="aic-stat-l">등록된 결과물</div></div>
+    <div class="aic-stat"><div class="aic-stat-v">${approved}</div><div class="aic-stat-l">승인 완료</div></div>
+    <div class="aic-stat"><div class="aic-stat-v">${aicPhotoStats().tagged}</div><div class="aic-stat-l">용도 지정 사진</div></div>`;
+}
+function aicPhotoStats(){
+  const pu = state.photoUse||{};
+  let tagged=0;
+  Object.keys(pu).forEach(k=>{ const v=pu[k]; if(v && (v.portfolio||v.blog||v.sns||v.home)) tagged++; });
+  return {tagged};
+}
+function aicOpenDoc(docId){ state.aicDocId = docId; state.modal='aicDoc'; render(); }
+function aicSelectVersion(docId, idx){ const d=aicDocById(docId); if(!d) return; d.curV=idx; render(); }
+
+/* ===== 업무 지시서 복사 ===== */
+function aicCopyPrompt(teamId){
+  const text = aicBuildPrompt(teamId);
+  const t = aicTeam(teamId);
+  const done = ()=>{ toast(t.name+' 업무 지시서를 복사했어요. Claude 채팅에 붙여넣으세요','ok'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>aicShowPrompt(teamId));
+  } else aicShowPrompt(teamId);
+}
+function aicShowPrompt(teamId){ state.aicPromptTeam=teamId; state.modal='aicPrompt'; render(); }
+
+// 대표 승인 — 승인 전에는 절대 실행되지 않는다
+function aicApproveDoc(docId){
+  const d = aicDocById(docId); if(!d) return;
+  if(!d.needsApproval){ toast('이 결과물은 승인이 필요 없어요','warn'); return; }
+  if(d.status==='approved'){ toast('이미 승인된 결과물이에요','warn'); return; }
+  const act = aicDocAction(d);
+  if(!confirm(d.name+'\n\n승인하면 '+act+' 준비 완료 상태가 됩니다. 계속할까요?')) return;
+  d.status='approved'; d.approvedAt=aicTimeStr(new Date());
+  aicHist(d, 'approved', '대표 승인 ('+d.versions[d.curV].v+') → '+act+' 준비 완료');
+  aicSaveDocs();
+  logActivity(d.name+' 승인 (AI 회사)', '승인');
+  toast('승인했어요. '+act+' 준비 완료','ok');
+  render();
+}
+function aicReviseDoc(docId){ state.aicFbDocId=docId; state.aicFbMode='revise'; state.modal='aicFeedback'; render(); }
+function aicRejectDoc(docId){ state.aicFbDocId=docId; state.aicFbMode='reject'; state.modal='aicFeedback'; render(); }
+function aicSubmitFeedback(){
+  const d = aicDocById(state.aicFbDocId); if(!d) return;
+  const mode = state.aicFbMode;
+  const ta = document.getElementById('aicFbText');
+  const note = ta ? ta.value.trim() : '';
+  if(!note){ toast(mode==='reject'?'반려 사유를 입력해 주세요':'수정 요청 내용을 입력해 주세요','warn'); if(ta) ta.focus(); return; }
+  const at = aicTimeStr(new Date());
+  const base = d.versions[d.curV];
+  const nv = 'V'+(d.versions.length+1);
+  if(mode==='reject'){
+    aicHist(d, 'reject', '대표 반려 — '+note);
+    d.versions.push({v:nv, at, body: base.body, note:'반려 사유 반영 재작업 대기 — '+note, rework:true});
+    d.curV = d.versions.length-1;
+    d.status = d.needsApproval ? 'draft' : 'done';
+    d.rejectNote = note;
+    aicHist(d, 'rework', nv+' 재작업 대기 — '+d.staffName+'에 재배정');
+    logActivity(d.name+' 반려 (AI 회사): '+note, '반려');
+    toast('반려했어요. 재작업 지시서를 복사해 다시 요청하세요','ok');
+  } else {
+    d.versions.push({v:nv, at, body: base.body, note, revise:true});
+    d.curV = d.versions.length-1;
+    if(d.needsApproval) d.status='draft';
+    aicHist(d, 'revise', '대표 수정 요청 — '+note);
+    logActivity(d.name+' 수정 요청 (AI 회사): '+note, '변경');
+    toast('수정 요청을 등록했어요 ('+nv+')','ok');
+  }
+  aicSaveDocs();
+  state.modal='aicDoc'; state.aicDocId=d.id; state.aicFbDocId=null; state.aicFbMode=null;
+  render();
+}
+// 재작업/수정 지시서 복사 (원문 + 요청사항)
+function aicCopyRework(docId){
+  const d = aicDocById(docId); if(!d) return;
+  const ver = d.versions[d.curV];
+  const t = aicTeam(d.staffId);
+  const txt = `당신은 HM인테리어의 ${t?t.name:d.staffName}입니다.
+아래 결과물을 대표 요청사항에 맞게 수정해 주세요.
+
+[대표 요청사항]
+${ver.note||'(요청사항 없음)'}
+
+[기존 결과물]
+──────────────────────
+${ver.body}
+──────────────────────
+
+요청사항만 반영하고 나머지는 유지하세요. 수정본 전문을 출력해 주세요.`;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('수정 지시서를 복사했어요','ok')).catch(()=>{});
+  }
+}
+// 결과 등록
+function aicOpenRegister(teamId){ state.aicRegTeam = teamId || 'research'; state.modal='aicRegister'; render(); }
+function aicSubmitRegister(){
+  const teamSel = document.getElementById('aicRegTeamSel');
+  const nameEl = document.getElementById('aicRegName');
+  const bodyEl = document.getElementById('aicRegBody');
+  const apEl = document.getElementById('aicRegApproval');
+  const team = aicTeam(teamSel ? teamSel.value : state.aicRegTeam); if(!team) return;
+  const name = (nameEl.value||'').trim();
+  const body = (bodyEl.value||'').trim();
+  if(!name){ toast('결과물 제목을 입력해 주세요','warn'); nameEl.focus(); return; }
+  if(!body){ toast('내용을 붙여넣어 주세요','warn'); bodyEl.focus(); return; }
+  const type = /\.(pdf|xlsx|docx|md|txt)$/i.test(name) ? name.split('.').pop().toLowerCase() : 'md';
+  const fname = /\.\w+$/.test(name) ? name : name+'.md';
+  aicMakeDoc(team, fname, type, body, apEl.checked);
+  logActivity(fname+' 등록 ('+team.name+')', '추가');
+  toast(team.name+'에 결과물을 등록했어요','ok');
+  state.modal=null; state.aicRegTeam=null;
+  render();
+}
+/* ===== 다운로드 / PDF ===== */
+const AIC_MIME = {md:'text/markdown', txt:'text/plain', xlsx:'text/csv', docx:'text/plain', pdf:'text/plain'};
+function aicDownloadDoc(docId){
+  const d = aicDocById(docId); if(!d) return;
+  const ver = d.versions[d.curV];
+  const ext = (d.type==='pdf'||d.type==='docx') ? 'txt' : (d.type==='xlsx' ? 'csv' : d.type);
+  const base = d.name.replace(/\.[^.]+$/,'');
+  const fname = base + '_' + ver.v + '.' + ext;
+  const blob = new Blob(['﻿'+ver.body], {type:(AIC_MIME[d.type]||'text/plain')+';charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  toast(fname+' 저장했어요','ok');
+}
+function aicPrintDoc(docId){
+  const d = aicDocById(docId); if(!d) return;
+  const ver = d.versions[d.curV];
+  const co = (typeof getCompany==='function') ? getCompany() : {};
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(d.name)}</title>
+<style>
+@page{size:A4 portrait; margin:14mm;}
+html,body{margin:0;padding:0;background:#fff;}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; color:#1C2430;}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1F3864;padding-bottom:8px;margin-bottom:14px;}
+.hd .t{font-size:15px;font-weight:700;color:#1F3864;}
+.hd .m{font-size:10px;color:#6B7686;text-align:right;line-height:1.5;}
+pre{font-family:"Malgun Gothic","Apple SD Gothic Neo",monospace; font-size:10.5px; line-height:1.75;
+    white-space:pre-wrap; word-break:break-word; margin:0;}
+.ft{margin-top:16px;padding-top:8px;border-top:1px solid #E1E5EB;font-size:9px;color:#6B7686;text-align:center;}
+</style></head><body onload="setTimeout(function(){window.print();},400)">
+<div class="hd">
+  <div class="t">${esc(d.name)}</div>
+  <div class="m">${esc(co.name||'HM인테리어')}<br>${esc(d.staffName)} · ${esc(ver.v)} · ${esc(ver.at)}</div>
+</div>
+<pre>${esc(ver.body)}</pre>
+<div class="ft">${esc(co.name||'HM인테리어')} — 간판 디자인 · 제작 · 시공 · A/S</div>
+</body></html>`;
+  const w = window.open('', '_blank');
+  if(!w){ toast('팝업이 차단되었어요. 팝업 허용 후 다시 시도해 주세요','warn'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+/* ===== 화면 ===== */
+function renderAICompany(){
+  const pending = aicPendingDocs();
+  const pendingPanel = pending.length ? `
+    <div class="panel">
+      <h2>🟠 대표님 승인 대기 (${pending.length})</h2>
+      <div class="aic-sub" style="margin:-8px 0 12px">승인 전에는 발송·게시가 진행되지 않습니다.</div>
+      ${pending.map(d=>`<div class="aic-pend">
+        <span class="aic-doc-ic">${aicFileIcon(d.type)}</span>
+        <span class="aic-doc-name aicDocOpen" data-doc="${d.id}">${esc(d.name)}</span>
+        <span class="aic-doc-team">${d.staffIcon} ${esc(d.staffName)}</span>
+        <span class="aic-doc-act">${esc(aicDocAction(d))} 예정</span>
+        <span class="aic-pend-btns">
+          <button type="button" class="aic-btn aicDocOpen" data-doc="${d.id}">👀 결과 보기</button>
+          <button type="button" class="aic-btn aicDocRevise" data-doc="${d.id}">✏ 수정 요청</button>
+          <button type="button" class="aic-btn aic-btn-rej aicDocReject" data-doc="${d.id}">❌ 반려</button>
+          <button type="button" class="aic-btn aic-btn-primary aicDocApprove" data-doc="${d.id}">✅ 대표 승인</button>
+        </span>
+      </div>`).join('')}
+    </div>` : '';
+  const teamCards = AIC_TEAMS.map(t=>{
+    const docs = aicTeamDocs(t.id);
+    const recent = docs.slice(0,3);
+    return `<div class="aic-card">
+      <div class="aic-card-top">
+        <div class="aic-avatar">${t.icon}</div>
+        <div style="min-width:0">
+          <div class="aic-name">${esc(t.name)}</div>
+          <div class="aic-status">${esc(t.role)}</div>
+        </div>
+        ${t.automated?'<span class="aic-badge auto">🟢 자동</span>':''}
+      </div>
+      <div class="aic-row"><span class="aic-label">결과물</span><span class="aic-val aic-muted">${esc(t.out)}</span></div>
+      ${t.automated?`<div class="aic-row"><span class="aic-label">자동 실행</span><span class="aic-val"><a href="${esc(t.routineUrl)}" target="_blank" rel="noopener">${esc(t.schedule)} ↗</a></span></div>`:''}
+      <div class="aic-docs">
+        <div class="aic-doc-head">📂 등록된 결과물 (${docs.length})</div>
+        ${recent.length ? recent.map(d=>aicDocRowHtml(d,true)).join('') : '<div class="aic-doc-empty">아직 없어요. 아래 [업무 지시서 복사]로 시작하세요.</div>'}
+        ${docs.length>3?`<div class="aicAllDocsOpen" data-team="${t.id}" style="font-size:11.5px;color:var(--navy);cursor:pointer;margin-top:4px;font-weight:600">전체 ${docs.length}건 보기 →</div>`:''}
+      </div>
+      <div class="aic-btns">
+        <button type="button" class="aic-btn aic-btn-primary aicPromptCopy" data-team="${t.id}">📋 업무 지시서 복사</button>
+        <button type="button" class="aic-btn aicPromptView" data-team="${t.id}">👁 미리보기</button>
+        <button type="button" class="aic-btn aicRegisterOpen" data-team="${t.id}">📥 결과 등록</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="topbar"><h1>🤖 AI 회사</h1>
+      <button type="button" class="btn" id="aicMorningBtn">☀️ 오늘 브리핑</button>
+    </div>
+    <div class="aic-sub"><b>사용법:</b> ① [업무 지시서 복사] → ② Claude 채팅에 붙여넣기 → ③ 결과를 [결과 등록] → ④ 승인. 지시서에는 ERP의 실제 거래처·견적·사진 데이터가 자동으로 채워집니다.</div>
+    <div class="aic-stats">${aicSummaryHtml()}</div>
+    ${pendingPanel}
+    <div class="aic-grid">${teamCards}</div>`;
+}
+function renderAiResults(){
+  const q = (state.aiResQ||'').trim().toLowerCase();
+  const tf = state.aiResTeam||'전체';
+  let docs = (state.aiDocs||[]).slice();
+  if(tf!=='전체') docs = docs.filter(d=>d.staffId===tf);
+  if(q) docs = docs.filter(d=> d.name.toLowerCase().includes(q)
+    || d.staffName.toLowerCase().includes(q)
+    || d.versions.some(v=>v.body.toLowerCase().includes(q)));
+  const rows = docs.length ? docs.map(d=>{
+    const b = aicDocBadge(d);
+    return `<tr>
+      <td data-l="파일"><span class="aic-doc-name aicDocOpen" data-doc="${d.id}" style="cursor:pointer">${aicFileIcon(d.type)} ${esc(d.name)}</span></td>
+      <td data-l="담당">${d.staffIcon} ${esc(d.staffName)}</td>
+      <td data-l="버전"><span class="aic-doc-ver">${esc(d.versions[d.curV].v)}</span> <span style="font-size:10.5px;color:var(--text-mute)">/ ${d.versions.length}</span></td>
+      <td data-l="상태"><span class="aic-badge ${b.cls}">${b.label}</span></td>
+      <td data-l="등록">${esc(d.createdDate||'')} ${esc(d.createdAt)}</td>
+      <td data-l=""><span style="display:flex;gap:5px;justify-content:flex-end">
+        <button type="button" class="aic-btn aicDocOpen" data-doc="${d.id}">👀 보기</button>
+        <button type="button" class="aic-btn aicDocDl" data-doc="${d.id}">⬇ 다운로드</button>
+        <button type="button" class="aic-btn aicDocPrint" data-doc="${d.id}">🖨 PDF</button>
+      </span></td>
+    </tr>`;}).join('')
+    : `<tr><td colspan="6"><div class="empty">등록된 결과물이 없어요. AI 회사 화면에서 [업무 지시서 복사] → Claude에 붙여넣기 → [결과 등록] 순서로 시작하세요.</div></td></tr>`;
+  const teamChips = `<div class="chip ${tf==='전체'?'active':''} aiResTeam" data-t="전체">전체</div>`
+    + AIC_TEAMS.map(t=>`<div class="chip ${tf===t.id?'active':''} aiResTeam" data-t="${t.id}">${t.icon} ${esc(t.name)}</div>`).join('');
+  return `
+    <div class="topbar"><h1>📂 AI 결과물</h1>
+      <button type="button" class="btn secondary" id="aiResAllDl">⬇ 목록 CSV</button>
+    </div>
+    <div class="aic-sub">각 AI가 실제로 만들어 등록한 결과물입니다. 검색·버전 관리·다운로드·PDF 저장이 가능합니다.</div>
+    <div class="aic-stats">${aicSummaryHtml()}</div>
+    <div class="toolbar"><input id="aiResSearch" placeholder="파일명 · 담당 · 본문 내용으로 검색" value="${esc(state.aiResQ||'')}"></div>
+    <div class="chips">${teamChips}</div>
+    <div class="panel">
+      <table>
+        <thead><tr><th>파일</th><th>담당</th><th>버전</th><th>상태</th><th>등록</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+function renderAicDocModal(){
+  const d = aicDocById(state.aicDocId); if(!d) return '';
+  const ver = d.versions[d.curV];
+  const b = aicDocBadge(d);
+  const act = aicDocAction(d);
+  const needRework = ver.revise || ver.rework;
+  return `<div class="modal-bg" id="aicDocBg">
+    <div class="modal aic-doc-modal">
+      <div class="aic-dm-head">
+        <div>
+          <h3 style="margin:0">${aicFileIcon(d.type)} ${esc(d.name)}</h3>
+          <div class="aic-dm-meta">${d.staffIcon} ${esc(d.staffName)} · ${esc(d.createdDate||'')} ${esc(d.createdAt)} 등록 <span class="aic-badge ${b.cls}">${b.label}</span></div>
+        </div>
+        <span style="display:flex;gap:6px">
+          <button type="button" class="aic-btn aicDocDl" data-doc="${d.id}">⬇ 다운로드</button>
+          <button type="button" class="aic-btn aicDocPrint" data-doc="${d.id}">🖨 PDF</button>
+        </span>
+      </div>
+      <div class="aic-vers">
+        ${d.versions.map((v,i)=>`<button type="button" class="aic-ver ${i===d.curV?'on':''} aicVerPick" data-doc="${d.id}" data-i="${i}">${esc(v.v)}${i===d.versions.length-1?' · 최신':''}</button>`).join('')}
+      </div>
+      <div class="aic-ver-note">${esc(ver.at)} · ${esc(ver.note||'')}</div>
+      ${needRework?`<div class="aic-dm-warn">🔄 이 버전은 <b>재작업 대기</b> 상태입니다. 아래 [수정 지시서 복사]를 눌러 Claude에 붙여넣고, 받은 수정본을 [결과 등록]으로 다시 올리세요.
+        <div style="margin-top:8px"><button type="button" class="aic-btn aic-btn-primary aicReworkCopy" data-doc="${d.id}">📋 수정 지시서 복사</button></div></div>`:''}
+      <pre class="aic-doc-body">${esc(ver.body)}</pre>
+      ${d.needsApproval && d.status==='draft'
+        ? `<div class="aic-dm-warn">⚠️ 승인 시 <b>${esc(act)}</b> 준비 완료 상태가 됩니다. 승인 전에는 진행되지 않습니다.</div>`
+        : d.status==='approved'
+        ? `<div class="aic-dm-ok">✅ ${esc(d.approvedAt||'')} 대표 승인 완료 — ${esc(act)} 준비 완료</div>` : ''}
+      <div class="aic-hist">
+        <div class="aic-hist-h">📌 업무 히스토리</div>
+        ${(d.history||[]).map(h=>`<div class="aic-hist-i"><span class="aic-hist-t">${esc(h.at)}</span><span class="aic-hist-k">${AIC_HIST_ICON[h.kind]||'·'}</span><span>${esc(h.text)}</span></div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="aicDocClose">닫기</button>
+        <button type="button" class="btn secondary aicDocRevise" data-doc="${d.id}">✏ 수정 요청</button>
+        ${d.needsApproval && d.status==='draft'
+          ? `<button type="button" class="btn secondary aic-btn-rej aicDocReject" data-doc="${d.id}">❌ 반려</button>
+             <button type="button" class="btn aicDocApprove" data-doc="${d.id}">✅ 대표 승인</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+function renderAicFeedbackModal(){
+  const d = aicDocById(state.aicFbDocId); if(!d) return '';
+  const rej = state.aicFbMode==='reject';
+  return `<div class="modal-bg" id="aicFbBg">
+    <div class="modal">
+      <h3>${rej?'❌ 반려':'✏ 수정 요청'}</h3>
+      <div class="aic-dm-meta" style="margin-bottom:14px">${aicFileIcon(d.type)} ${esc(d.name)} · ${d.staffIcon} ${esc(d.staffName)} · ${esc(d.versions[d.curV].v)}</div>
+      <div class="field">
+        <label>${rej?'반려 사유':'수정 요청 내용'}</label>
+        <textarea id="aicFbText" rows="5" placeholder="${rej?'예) 자료 부족 / 품질 미달 / 고객 요청과 다름':'예) 시공 사례를 3개 더 추가해주세요. / 견적 부분을 앞으로 배치해주세요.'}" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.6;resize:vertical"></textarea>
+      </div>
+      <div class="aic-dm-ok" style="font-size:12px">등록 후 <b>[수정 지시서 복사]</b> 버튼이 생깁니다. 그걸 Claude에 붙여넣으면 요청이 반영된 수정본을 받을 수 있어요. 기존 버전은 삭제되지 않습니다.</div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="aicFbCancel">취소</button>
+        <button type="button" class="btn ${rej?'aic-btn-rej':''}" id="aicFbSubmit">${rej?'반려하기':'수정 요청 등록'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderAicRegisterModal(){
+  const cur = state.aicRegTeam||'research';
+  return `<div class="modal-bg" id="aicRegBg">
+    <div class="modal">
+      <h3>📥 결과 등록</h3>
+      <div class="aic-sub" style="margin:-8px 0 14px">Claude에게 받은 결과물을 붙여넣어 저장합니다.</div>
+      <div class="field">
+        <label>담당 AI</label>
+        <select id="aicRegTeamSel">
+          ${AIC_TEAMS.map(x=>`<option value="${x.id}" ${x.id===cur?'selected':''}>${x.icon} ${esc(x.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>결과물 제목</label>
+        <input type="text" id="aicRegName" placeholder="예) 하프커피 제안서">
+      </div>
+      <div class="field">
+        <label>내용 (붙여넣기)</label>
+        <textarea id="aicRegBody" rows="10" placeholder="Claude가 만들어준 결과물 전문을 붙여넣으세요." style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;font-family:inherit;line-height:1.6;resize:vertical"></textarea>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer">
+        <input type="checkbox" id="aicRegApproval" checked style="width:16px;height:16px">
+        발송·게시 전에 대표 승인이 필요한 결과물입니다
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="aicRegCancel">취소</button>
+        <button type="button" class="btn" id="aicRegSubmit">등록하기</button>
+      </div>
+    </div>
+  </div>`;
+}
+// 업무 지시서 미리보기 (복사 실패 시 수동 복사용)
+function renderAicPromptModal(){
+  const t = aicTeam(state.aicPromptTeam); if(!t) return '';
+  const txt = aicBuildPrompt(t.id);
+  return `<div class="modal-bg" id="aicPromptBg">
+    <div class="modal aic-doc-modal">
+      <div class="aic-dm-head">
+        <div><h3 style="margin:0">${t.icon} ${esc(t.name)} — 업무 지시서</h3>
+        <div class="aic-dm-meta">ERP의 실제 데이터가 채워진 상태입니다. 전체 선택 후 복사해 Claude 채팅에 붙여넣으세요.</div></div>
+        <button type="button" class="aic-btn aic-btn-primary aicPromptCopy" data-team="${t.id}">📋 복사</button>
+      </div>
+      <textarea id="aicPromptText" rows="18" readonly style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:monospace;line-height:1.65;background:#FAFBFD;resize:vertical">${esc(txt)}</textarea>
+      <div class="modal-actions"><button type="button" class="btn secondary" id="aicPromptClose">닫기</button></div>
+    </div>
+  </div>`;
+}
+// 오늘 브리핑 (ERP 실데이터만으로 즉시 생성 — AI 불필요)
+function renderAicMorningModal(){
+  const data = aicMorningData();
+  return `<div class="modal-bg" id="aicMorningBg">
+    <div class="modal aic-doc-modal">
+      <div class="aic-dm-head">
+        <div><h3 style="margin:0">☀️ 오늘 브리핑</h3>
+        <div class="aic-dm-meta">ERP 실제 데이터로 지금 계산한 값입니다 (추정·생성 없음)</div></div>
+        <button type="button" class="aic-btn aic-btn-primary" id="aicMorningCopy">📋 복사</button>
+      </div>
+      <pre class="aic-doc-body">${esc(data)}</pre>
+      <div class="aic-dm-ok" style="font-size:12px">이 내용을 복사해 Claude에 붙여넣으면 우선순위·추천 업무까지 정리된 브리핑을 받을 수 있어요. (대표비서 AI 카드의 [업무 지시서 복사]도 동일)</div>
+      <div class="modal-actions"><button type="button" class="btn secondary" id="aicMorningClose">닫기</button></div>
+    </div>
+  </div>`;
+}
+function renderAicAllDocsModal(){
+  const t = aicTeam(state.aicAllDocsTeam); if(!t) return '';
+  const docs = aicTeamDocs(t.id);
+  return `<div class="modal-bg" id="aicAllBg">
+    <div class="modal aic-doc-modal">
+      <h3>${t.icon} ${esc(t.name)} — 등록된 결과물 (${docs.length})</h3>
+      <div class="aic-sub" style="margin:-8px 0 12px">파일을 누르면 전체 내용을 볼 수 있습니다.</div>
+      ${docs.map(d=>aicDocRowHtml(d,false)).join('') || '<div class="empty">아직 없어요.</div>'}
+      <div class="modal-actions"><button type="button" class="btn secondary" id="aicAllClose">닫기</button></div>
+    </div>
+  </div>`;
+}
+function aicBindDocClicks(){
+  document.querySelectorAll('.aic-doc[data-doc]').forEach(el=> el.addEventListener('click', ()=> aicOpenDoc(el.dataset.doc)));
+  document.querySelectorAll('.aicDocOpen').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicOpenDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicDocDl').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicDownloadDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicDocPrint').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicPrintDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicDocRevise').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicReviseDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicDocReject').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicRejectDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicDocApprove').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicApproveDoc(el.dataset.doc); }));
+  document.querySelectorAll('.aicReworkCopy').forEach(el=> el.addEventListener('click', e=>{ e.stopPropagation(); aicCopyRework(el.dataset.doc); }));
+  document.querySelectorAll('.aicVerPick').forEach(el=> el.addEventListener('click', ()=> aicSelectVersion(el.dataset.doc, parseInt(el.dataset.i))));
+  document.querySelectorAll('.aicAllDocsOpen').forEach(el=> el.addEventListener('click', e=>{
+    e.stopPropagation(); state.aicAllDocsTeam=el.dataset.team; state.modal='aicAllDocs'; render();
+  }));
+  document.querySelectorAll('.aicRegisterOpen').forEach(el=> el.addEventListener('click', ()=> aicOpenRegister(el.dataset.team)));
+  document.querySelectorAll('.aicPromptCopy').forEach(el=> el.addEventListener('click', ()=> aicCopyPrompt(el.dataset.team)));
+  document.querySelectorAll('.aicPromptView').forEach(el=> el.addEventListener('click', ()=> aicShowPrompt(el.dataset.team)));
+  const mb=document.getElementById('aicMorningBtn');
+  if(mb) mb.addEventListener('click', ()=>{ state.modal='aicMorning'; render(); });
+  const mc=document.getElementById('aicMorningClose');
+  if(mc) mc.addEventListener('click', ()=>{ state.modal=null; render(); });
+  const mcp=document.getElementById('aicMorningCopy');
+  if(mcp) mcp.addEventListener('click', ()=>{
+    const t=aicMorningData();
+    if(navigator.clipboard) navigator.clipboard.writeText(t).then(()=>toast('브리핑을 복사했어요','ok')).catch(()=>{});
+  });
+  const mbg=document.getElementById('aicMorningBg');
+  if(mbg) mbg.addEventListener('click', e=>{ if(e.target.id==='aicMorningBg'){ state.modal=null; render(); } });
+  const pc=document.getElementById('aicPromptClose');
+  if(pc) pc.addEventListener('click', ()=>{ state.modal=null; state.aicPromptTeam=null; render(); });
+  const pbg=document.getElementById('aicPromptBg');
+  if(pbg) pbg.addEventListener('click', e=>{ if(e.target.id==='aicPromptBg'){ state.modal=null; state.aicPromptTeam=null; render(); } });
+  const dc=document.getElementById('aicDocClose');
+  if(dc) dc.addEventListener('click', ()=>{ state.modal=null; state.aicDocId=null; render(); });
+  const dbg=document.getElementById('aicDocBg');
+  if(dbg) dbg.addEventListener('click', e=>{ if(e.target.id==='aicDocBg'){ state.modal=null; state.aicDocId=null; render(); } });
+  const ac=document.getElementById('aicAllClose');
+  if(ac) ac.addEventListener('click', ()=>{ state.modal=null; state.aicAllDocsTeam=null; render(); });
+  const abg=document.getElementById('aicAllBg');
+  if(abg) abg.addEventListener('click', e=>{ if(e.target.id==='aicAllBg'){ state.modal=null; state.aicAllDocsTeam=null; render(); } });
+  const fbS=document.getElementById('aicFbSubmit');
+  if(fbS) fbS.addEventListener('click', aicSubmitFeedback);
+  const fbC=document.getElementById('aicFbCancel');
+  if(fbC) fbC.addEventListener('click', ()=>{ state.modal='aicDoc'; state.aicDocId=state.aicFbDocId; state.aicFbDocId=null; state.aicFbMode=null; render(); });
+  const fbBg=document.getElementById('aicFbBg');
+  if(fbBg) fbBg.addEventListener('click', e=>{ if(e.target.id==='aicFbBg'){ state.modal=null; state.aicFbDocId=null; state.aicFbMode=null; render(); } });
+  const regS=document.getElementById('aicRegSubmit');
+  if(regS) regS.addEventListener('click', aicSubmitRegister);
+  const regC=document.getElementById('aicRegCancel');
+  if(regC) regC.addEventListener('click', ()=>{ state.modal=null; state.aicRegTeam=null; render(); });
+  const regBg=document.getElementById('aicRegBg');
+  if(regBg) regBg.addEventListener('click', e=>{ if(e.target.id==='aicRegBg'){ state.modal=null; state.aicRegTeam=null; render(); } });
+  const rs=document.getElementById('aiResSearch');
+  if(rs) bindSearchInput('aiResSearch', v=>{ state.aiResQ=v; });
+  document.querySelectorAll('.aiResTeam').forEach(el=> el.addEventListener('click', ()=>{ state.aiResTeam=el.dataset.t; render(); }));
+  const adl=document.getElementById('aiResAllDl');
+  if(adl) adl.addEventListener('click', ()=>{
+    const rows=[['파일명','담당','현재버전','버전수','상태','등록일','등록시각']];
+    (state.aiDocs||[]).forEach(d=>{
+      rows.push([d.name, d.staffName, d.versions[d.curV].v, d.versions.length, aicDocBadge(d).label, d.createdDate||'', d.createdAt]);
+    });
+    downloadCSV('AI결과물_목록.csv', rows);
+    toast('목록을 저장했어요','ok');
+  });
+  // 사진 용도 체크박스
+  document.querySelectorAll('.photoUseChk').forEach(el=> el.addEventListener('change', ()=>{
+    const key=el.dataset.key, i=el.dataset.i, f=el.dataset.f;
+    const id=key+'#'+i;
+    state.photoUse = state.photoUse||{};
+    state.photoUse[id] = state.photoUse[id] || {};
+    state.photoUse[id][f] = el.checked;
+    store.set('photoUse', state.photoUse).catch(()=>{});
+    scheduleCloudPush();
+  }));
+}
 function ensureStateDefaults(){
   const S=state;
   if(!Array.isArray(S.quotes)) S.quotes=[];
@@ -5741,6 +7421,9 @@ function ensureStateDefaults(){
   if(!Array.isArray(S.downloads)) S.downloads=[];
   if(!Array.isArray(S.events)) S.events=[];
   if(!Array.isArray(S.autoSnaps)) S.autoSnaps=[];
+  if(!Array.isArray(S.aiDocs)) S.aiDocs=[];
+  if(!S.photoUse || typeof S.photoUse!=='object') S.photoUse={};
+  if(!S.cmsTab) S.cmsTab='content';
   ['payments','jobs','mfg','install','projects','routeDone','routeExtra'].forEach(k=>{ if(!S[k] || typeof S[k]!=='object') S[k]={}; });
   if(!S.cloud || typeof S.cloud!=='object') S.cloud={url:'',key:'',ws:''};
   if(!S.view) S.view='home';
@@ -5759,6 +7442,9 @@ function render(){
   let html;
   if(state.gqOpen) html = renderGlobalSearch();
   else if(state.view==='home') html = renderHome();
+  else if(state.view==='aicompany') html = renderAICompany();
+  else if(state.view==='airesults') html = renderAiResults();
+  else if(state.view==='website') html = renderWebsiteAdmin();
   else if(state.view==='clients') html = state.detailClientId? renderClientDetail() : renderClients();
   else if(state.view==='items') html = renderItems();
   else if(state.view==='pay') html = renderPay();
@@ -5776,7 +7462,7 @@ function render(){
   html += renderModal();
   if(state.view==='clients') html += renderClientModal2();
   if(state.view==='items' && state.modal==='item') html += renderItemModal();
-  if(state.view==='pay' && state.modal==='pay') html += renderPayModal();
+  if((state.view==='pay'||state.view==='quotes') && state.modal==='pay') html += renderPayModal();
   if(state.view==='work' && state.modal==='job') html += renderJobModal();
   if(state.view==='work' && state.modal==='inst') html += renderInstallModal();
   if((state.view==='work'||state.view==='home') && state.modal==='as') html += renderAsModal();
@@ -5787,6 +7473,12 @@ function render(){
   if(state.modal==='banner') html += renderBannerModal();
   if(state.view==='gallery' && state.galleryOpen) html += renderPhotoViewer();
   if(state.modal==='map') html += renderMapModal();
+  if(state.modal==='aicDoc') html += renderAicDocModal();
+  if(state.modal==='aicAllDocs') html += renderAicAllDocsModal();
+  if(state.modal==='aicFeedback') html += renderAicFeedbackModal();
+  if(state.modal==='aicRegister') html += renderAicRegisterModal();
+  if(state.modal==='aicPrompt') html += renderAicPromptModal();
+  if(state.modal==='aicMorning') html += renderAicMorningModal();
   main.innerHTML = html;
   try{ bindEvents(); }catch(e){ console.warn('bind', e&&e.message); }
   applyInputUX();
@@ -5849,7 +7541,32 @@ function openQuoteEditor(id){
   state.modal='new'; render();
 }
 
+/* 입력 디바운스 */
+function debounce(fn, ms){ let t; return function(){ const a=arguments, self=this; clearTimeout(t); t=setTimeout(()=>fn.apply(self,a), ms||220); }; }
+/* 검색 입력 공통 바인딩 — 한글 조합(IME) 중엔 재렌더 안 하고, 입력이 멈춘 뒤에만 렌더.
+   → 한글 'ㄱㅡㅇ' 깨짐 + 매 글자 렌더로 인한 렉 모두 해결. */
+function bindSearchInput(id, setter, opts){
+  const el=document.getElementById(id);
+  if(!el) return;
+  opts=opts||{};
+  let composing=false;
+  const doRender=debounce(()=>{
+    if(composing) return;        // 조합 중이면 렌더 스킵 → compositionend에서 다시 렌더됨 (깨짐 방지)
+    keepFocus(id); render();
+  }, opts.ms||250);
+  el.addEventListener('compositionstart', ()=>{ composing=true; });
+  el.addEventListener('compositionend', ()=>{ composing=false; setter(el.value); doRender(); });
+  el.addEventListener('input', ()=>{
+    setter(el.value);       // 상태는 즉시 반영, 렌더만 미룸
+    if(composing) return;   // 한글 조합 중엔 재렌더 금지(깨짐 방지)
+    doRender();
+  });
+  if(opts.keydown) el.addEventListener('keydown', opts.keydown);
+}
 function bindEvents(){
+  aicBindDocClicks();
+  try{ bindWebsiteAdmin(); }catch(e){ console.warn('cms', e&&e.message); }
+
   document.querySelectorAll('.qbtn').forEach(b=>{
     b.addEventListener('click', ()=>{
       state.view = b.dataset.go;
@@ -5867,17 +7584,8 @@ function bindEvents(){
   });
 
   const gsIn=document.getElementById('gsInput');
-  if(gsIn){
-    gsIn.value = state.gq;
-    gsIn.addEventListener('input', e=>{
-      state.gq=e.target.value;
-      state.gqOpen = !!e.target.value.trim();
-      keepFocus('gsInput'); render();
-    });
-    gsIn.addEventListener('keydown', e=>{
-      if(e.key==='Escape'){ state.gq=''; state.gqOpen=false; render(); }
-    });
-  }
+  if(gsIn) gsIn.value = state.gq;
+  bindSearchInput('gsInput', v=>{ state.gq=v; state.gqOpen=!!v.trim(); }, { keydown:e=>{ if(e.key==='Escape'){ state.gq=''; state.gqOpen=false; render(); } } });
   document.querySelectorAll('.gsEx').forEach(b=> b.addEventListener('click', ()=>{
     state.gq=b.dataset.q; state.gqOpen=true; render();
   }));
@@ -6095,7 +7803,7 @@ function bindEvents(){
   document.querySelectorAll('.projChip').forEach(b=> b.addEventListener('click', ()=>{ state.projFilter=b.dataset.f; render(); }));
   const projS=document.getElementById('projSearchIn');
   if(projS){
-    projS.addEventListener('input', e=>{ state.projSearch=e.target.value; keepFocus('projSearchIn'); render(); });
+    bindSearchInput('projSearchIn', v=>{ state.projSearch=v; });
   }
 
   const fIn=document.getElementById('pjFileIn');
@@ -6178,6 +7886,11 @@ function bindEvents(){
   }));
   const cdB=document.getElementById('cdBack');
   if(cdB) cdB.addEventListener('click', ()=>{ state.detailClientId=null; render(); });
+  const cdMap=document.getElementById('cdMap');
+  if(cdMap) cdMap.addEventListener('click', ()=>{
+    const c=state.clients.find(x=>x.id===state.detailClientId); if(!c) return;
+    window.open(kakaoMapLink(c.branch||c.name, c.lat, c.lng, c.address), '_blank');
+  });
   const cdE=document.getElementById('cdEdit');
   if(cdE) cdE.addEventListener('click', ()=>{ state.editClientId=state.detailClientId; state.modal='client'; render(); });
   const cdG=document.getElementById('cdGallery');
@@ -6323,14 +8036,30 @@ function bindEvents(){
     toast('동선에서 뺐어요 · 아래 "추가할 현장"에서 다시 넣을 수 있어요','ok');
     render();
   }));
-  const rxClient=document.getElementById('rx_client');
-  if(rxClient) rxClient.addEventListener('change', async ()=>{
-    const i=rxClient.value; if(i==='') return;
-    const c=(state.clients||[])[Number(i)]; if(!c){ return; }
+  // 거래처 체크리스트: 체크=동선에 담기, 해제=빼기 (한눈에 보여서 중복 걱정 없음)
+  document.querySelectorAll('.rcPick').forEach(cb=> cb.addEventListener('change', async ()=>{
     const date=state.routeDate||todayStr();
-    await addRouteExtra(date, c.branch||c.name, c.address||c.region||c.name||'');
-    state.routePick=null; state.routeOrder=null;
-    toast('['+(c.branch||c.name)+'] 동선에 추가했어요','ok'); render();
+    const label=cb.dataset.label, addr=cb.dataset.addr||'';
+    state.routeExtra=state.routeExtra||{};
+    const arr=(state.routeExtra[date]=state.routeExtra[date]||[]);
+    if(cb.checked){
+      if(!arr.some(e=>e.label===label)) arr.push({id:uid('rx'), qid:null, type:'직접', label, addr, tel:''});
+    } else {
+      state.routeExtra[date]=arr.filter(e=>e.label!==label);
+    }
+    try{ await store.set('routeExtra', state.routeExtra); }catch(e){} scheduleCloudPush();
+    state.routePick=null; state.routeOrder=null; render();
+  }));
+  const rxSearch=document.getElementById('rxSearch');
+  if(rxSearch) rxSearch.addEventListener('click', ()=>{
+    const q=((document.getElementById('rx_name')||{}).value||'').trim();
+    openAddressSearch({ query:q, onComplete: async (d)=>{
+      const date=state.routeDate||todayStr();
+      const label=d.placeName||d.address||'현장';
+      await addRouteExtra(date, label, d.address||d.placeName||'');
+      state.routePick=null; state.routeOrder=null;
+      toast('['+label+'] 동선에 추가했어요','ok'); render();
+    }});
   });
   const rxAdd=document.getElementById('rxAdd');
   if(rxAdd) rxAdd.addEventListener('click', async ()=>{
@@ -6393,10 +8122,12 @@ function bindEvents(){
   if(newBtn) newBtn.addEventListener('click', ()=>{ state.editQuoteId=null; state.draftHeader=null; state.copiedFrom=null; state.draftLines=[{name:'',spec:'',qty:1,unit:'',price:0,remark:''}]; state.modal='new'; render(); });
 
   const search = document.getElementById('searchInput');
-  if(search) search.addEventListener('input', e=>{ keepFocus('searchInput'); state.search = e.target.value; render(); });
+  bindSearchInput('searchInput', v=>{ state.search=v; });
 
   const filt = document.getElementById('statusFilter');
   if(filt) filt.addEventListener('change', e=>{ state.filterStatus = e.target.value; render(); });
+  const mfilt = document.getElementById('monthFilter');
+  if(mfilt) mfilt.addEventListener('change', e=>{ state.filterMonth = e.target.value; render(); });
 
   document.querySelectorAll('.status-select').forEach(sel=>{
     sel.addEventListener('change', async e=>{
@@ -6430,12 +8161,28 @@ function bindEvents(){
     if(c){
       const rg = document.getElementById('f_region');
       if(rg && !rg.value) rg.value = c.address || '';
+      // 기존 거래처에 저장된 좌표/행정구역 자동 로드
+      const setH=(id,v)=>{ const el=document.getElementById(id); if(el && (v!=null&&v!=='')) el.value=v; };
+      setH('fq_lat',c.lat); setH('fq_lng',c.lng); setH('fq_zonecode',c.zonecode); setH('fq_sido',c.sido); setH('fq_sigungu',c.sigungu); setH('fq_dong',c.dong);
       const bits=[];
       if(c.contact) bits.push('담당자 '+c.contact);
       if(c.mobile||c.phone) bits.push('연락처 '+(c.mobile||c.phone));
       if(infoLine) infoLine.textContent = bits.length? bits.join(' · ')+' (기존 거래처)' : '기존 거래처';
     } else if(infoLine){ infoLine.textContent = val? '신규 거래처로 등록됩니다':''; }
   });
+  // 견적 편집기 주소검색 (거래처명/공사명을 초기 검색어로)
+  const fqSearch=document.getElementById('fq_addrSearch');
+  if(fqSearch){ console.log('[주소검색] 견적 버튼 핸들러 연결됨');
+    fqSearch.addEventListener('click', ()=>{
+    console.log('[주소검색] 견적 버튼 클릭됨');
+    const q=(((document.getElementById('f_client_input')||{}).value||'')+' '+((document.getElementById('f_region')||{}).value||'')).trim();
+    openAddressSearch({ query:q, onComplete:(d)=>{
+      const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+      set('f_region',d.address); set('fq_lat',d.lat); set('fq_lng',d.lng);
+      set('fq_zonecode',d.zonecode); set('fq_sido',d.sido); set('fq_sigungu',d.sigungu); set('fq_dong',d.dong);
+      if(d.lat) toast('주소·좌표 저장 준비됨 ✔','ok');
+    }});
+  }); }
 
   ['f_date','f_region','f_item'].forEach(id=>{
     const el=document.getElementById(id);
@@ -6520,10 +8267,14 @@ function bindEvents(){
     if(!client){ alert('거래처를 선택하거나 입력해 주세요.'); return; }
     if(!sum){ alert('견적 내역을 한 줄 이상 입력해 주세요.'); return; }
 
+    const qgv=id=>(document.getElementById(id)||{}).value||'';
     if(!matched && !state.clients.find(x=>x.name===client)){
       const chain = deriveChain(client);
       state.clients.push({ id:'c_'+Date.now(), name:client, chain, branch:branchName(client,chain),
-        contact:'', phone:'', mobile:'', address:document.getElementById('f_region').value.trim(), email:'', terms:'', discount:0, memo:'' });
+        contact:'', phone:'', mobile:'', address:document.getElementById('f_region').value.trim(),
+        zonecode:qgv('fq_zonecode'), sido:qgv('fq_sido'), sigungu:qgv('fq_sigungu'), dong:qgv('fq_dong'),
+        lat:parseFloat(qgv('fq_lat'))||null, lng:parseFloat(qgv('fq_lng'))||null,
+        email:'', terms:'', discount:0, memo:'' });
       await saveClients();
     }
 
@@ -6532,6 +8283,8 @@ function bindEvents(){
       qnum: document.getElementById('f_qnum').value,
       date: document.getElementById('f_date').value,
       client, region: document.getElementById('f_region').value.trim(),
+      zonecode:qgv('fq_zonecode'), sido:qgv('fq_sido'), sigungu:qgv('fq_sigungu'), dong:qgv('fq_dong'),
+      lat:parseFloat(qgv('fq_lat'))||null, lng:parseFloat(qgv('fq_lng'))||null,
       item: document.getElementById('f_item').value.trim(),
       lines, amount: sum
     };
@@ -6579,11 +8332,24 @@ function bindEvents(){
     inp.addEventListener('click', e=> e.stopPropagation());
     inp.addEventListener('change', async e=>{
       e.stopPropagation();
-      const id=inp.dataset.id; const inst=getInstall(id); inst.doneDate=inp.value||''; state.install[id]=inst;
+      const id=inp.dataset.id; const inst=getInstall(id); inst.doneDate=inp.value||''; if(inp.value) inst.doneUnknown=false; state.install[id]=inst;
       await saveInstall();
       const q=state.quotes.find(x=>x.id===id);
       if(inp.value && q && q.status==='계약'){ q.status='시공완료'; await saveQuotes(); }
       toast(inp.value?'시공일 저장 · 시공완료 처리':'시공일을 지웠어요','ok'); render();
+    });
+  });
+  // 시공일 '모름' 토글 — 옛날 현장처럼 날짜를 모를 때: 완료 처리하되 날짜는 미상
+  document.querySelectorAll('.qInstUnknown').forEach(b=>{
+    b.addEventListener('click', async e=>{
+      e.stopPropagation();
+      const id=b.dataset.id; const inst=getInstall(id);
+      inst.doneUnknown=!inst.doneUnknown;
+      if(inst.doneUnknown) inst.doneDate='';   // 미상이면 날짜 비움
+      state.install[id]=inst; await saveInstall();
+      const q=state.quotes.find(x=>x.id===id);
+      if(inst.doneUnknown && q && q.status==='계약'){ q.status='시공완료'; await saveQuotes(); }
+      toast(inst.doneUnknown?'시공완료 · 날짜 미상으로 표시':'미상 해제','ok'); render();
     });
   });
   document.querySelectorAll('.qSend').forEach(b=> b.addEventListener('click', ()=>sendQuote(b.dataset.id)));
@@ -6709,7 +8475,7 @@ function bindEvents(){
     state.noticeOpenId=r.dataset.id; render();
   }));
   const ntSearch=document.getElementById('ntSearch');
-  if(ntSearch) ntSearch.addEventListener('input', e=>{ state.noticeSearch=e.target.value; keepFocus('ntSearch'); render(); });
+  bindSearchInput('ntSearch', v=>{ state.noticeSearch=v; });
   const ntSort=document.getElementById('ntSort');
   if(ntSort) ntSort.addEventListener('change', e=>{ state.noticeSort=e.target.value; render(); });
   const ntBack=document.querySelector('.ntBack');
@@ -6879,7 +8645,7 @@ function bindEvents(){
     state.detailClientId=r.dataset.id; state.clientMap=false; render();
   }));
   const cSearch = document.getElementById('clientSearchInput');
-  if(cSearch) cSearch.addEventListener('input', e=>{ keepFocus('clientSearchInput'); state.clientSearch = e.target.value; render(); });
+  bindSearchInput('clientSearchInput', v=>{ state.clientSearch=v; });
 
   const newClientBtn = document.getElementById('newClientBtn');
   if(newClientBtn) newClientBtn.addEventListener('click', ()=>{ state.editClientId=null; state.modal='client'; render(); });
@@ -6892,12 +8658,58 @@ function bindEvents(){
   if(cCancel) cCancel.addEventListener('click', ()=>{ state.modal=null; state.editClientId=null; render(); });
   const cBg = document.getElementById('clientModalBg');
   if(cBg) cBg.addEventListener('click', e=>{ if(e.target.id==='clientModalBg'){ state.modal=null; state.editClientId=null; render(); } });
+  // 거래처 주소검색 (상호명을 초기 검색어로)
+  const fcSearch=document.getElementById('fc_addrSearch');
+  if(fcSearch){ console.log('[주소검색] 거래처 버튼 핸들러 연결됨');
+    fcSearch.addEventListener('click', ()=>{
+    console.log('[주소검색] 거래처 버튼 클릭됨');
+    const q=(((document.getElementById('fc_branch')||{}).value||'')+' '+((document.getElementById('fc_chain')||{}).value||'')).trim();
+    openAddressSearch({ query:q, onComplete:(d)=>{
+      const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+      const br=document.getElementById('fc_branch'); if(br && !br.value.trim() && d.placeName) br.value=d.placeName;
+      const ph=document.getElementById('fc_phone'); if(ph && !ph.value.trim() && d.phone) ph.value=d.phone;
+      set('fc_address',d.address); set('fc_sido',d.sido); set('fc_sigungu',d.sigungu); set('fc_dong',d.dong);
+      set('fc_lat',d.lat); set('fc_lng',d.lng);
+      const ex=document.getElementById('fc_addrExtra');
+      if(ex) ex.innerHTML=esc(((d.sido||'')+' '+(d.sigungu||'')+' '+(d.dong||'')).trim())+(d.phone?' · 📞'+esc(d.phone):'')+(d.lat?' · 📍좌표 저장됨':'');
+      const mv=document.getElementById('fc_mapView'); if(mv) mv.style.display=d.lat?'block':'none';
+      const m=document.getElementById('fc_map');
+      if(d.lat && m){ m.style.display='block'; drawKakaoMap('fc_map',[{lat:d.lat,lng:d.lng,label:(document.getElementById('fc_branch')||{}).value||'현장'}],{level:4}); }
+    }});
+  }); }
+  const fcMapView=document.getElementById('fc_mapView');
+  if(fcMapView) fcMapView.addEventListener('click', ()=>{
+    const lat=(document.getElementById('fc_lat')||{}).value, lng=(document.getElementById('fc_lng')||{}).value;
+    const nm=(document.getElementById('fc_branch')||{}).value||'현장', ad=(document.getElementById('fc_address')||{}).value;
+    window.open(kakaoMapLink(nm, lat, lng, ad), '_blank');
+  });
+  // 편집 시 저장된 좌표가 있으면 지도 미리보기 자동 표시
+  (function(){ const m=document.getElementById('fc_map'); if(!m) return;
+    const lat=parseFloat((document.getElementById('fc_lat')||{}).value), lng=parseFloat((document.getElementById('fc_lng')||{}).value);
+    if(lat && lng){ m.style.display='block'; drawKakaoMap('fc_map',[{lat,lng,label:(document.getElementById('fc_branch')||{}).value||'현장'}],{level:4}); }
+  })();
 
   const cSave = document.getElementById('saveClientModal');
   if(cSave) cSave.addEventListener('click', async ()=>{
     const chain = document.getElementById('fc_chain').value.trim();
     const branch = document.getElementById('fc_branch').value.trim();
     if(!branch){ alert('지점명/상호는 필수예요.'); return; }
+    const gv=id=>(document.getElementById(id)||{}).value||'';
+    // 중복/유사 거래처 감지 (신규 등록 시) — 계속 등록도 가능
+    if(!state.editClientId){
+      const dups=findDuplicateClients(branch, gv('fc_phone'), gv('fc_address'), null);
+      if(dups.length){
+        const d=dups[0].client;
+        const head=(dups[0].why==='유사한 상호')?'⚠️ 유사한 거래처가 존재합니다.':'⚠️ 이미 등록된 거래처입니다.';
+        const msg=head+'  ('+dups[0].why+')\n\n'
+          +'· 상호: '+(d.branch||d.name||'-')+'\n'
+          +'· 담당자: '+(d.contact||'-')+'\n'
+          +'· 전화: '+(d.phone||d.mobile||'-')+'\n'
+          +'· 주소: '+(d.address||'-')+'\n\n'
+          +'[확인] = 그대로 계속 등록 / [취소] = 등록 멈춤';
+        if(!confirm(msg)) return;
+      }
+    }
     const fields = {
       type: (document.getElementById('fc_type')||{}).value || '고객사',
       chain, branch, name: fullClientName(chain, branch),
@@ -6905,6 +8717,8 @@ function bindEvents(){
       phone: document.getElementById('fc_phone').value.trim(),
       mobile: document.getElementById('fc_mobile').value.trim(),
       address: document.getElementById('fc_address').value.trim(),
+      zonecode: gv('fc_zonecode'), sido: gv('fc_sido'), sigungu: gv('fc_sigungu'), dong: gv('fc_dong'),
+      lat: parseFloat(gv('fc_lat'))||null, lng: parseFloat(gv('fc_lng'))||null,
       email: document.getElementById('fc_email').value.trim(),
       terms: document.getElementById('fc_terms').value.trim(),
       discount: parseFloat(document.getElementById('fc_discount').value)||0,
@@ -6924,7 +8738,7 @@ function bindEvents(){
 
   // items view
   const iSearch = document.getElementById('itemSearchInput');
-  if(iSearch) iSearch.addEventListener('input', e=>{ keepFocus('itemSearchInput'); state.itemSearch = e.target.value; render(); });
+  bindSearchInput('itemSearchInput', v=>{ state.itemSearch=v; });
 
   document.querySelectorAll('.chip').forEach(chip=>{
     chip.addEventListener('click', ()=>{ state.itemCat = chip.dataset.cat; render(); });
