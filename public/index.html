@@ -6242,7 +6242,39 @@ async function cmsSendCode(email){
     headers:{'apikey':sbKey(),'content-type':'application/json'},
     body: JSON.stringify({email, create_user:true})
   });
-  if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,160)); }
+  if(!r.ok){
+    const t = await r.text();
+    if(/rate.?limit/i.test(t)){
+      throw new Error('메일 발송 한도를 초과했습니다. 무료 플랜은 시간당 발송 수가 제한됩니다. '
+        + '잠시 후 다시 시도하시거나, 아래 비밀번호 로그인을 사용해 주세요.');
+    }
+    throw new Error(t.slice(0,160));
+  }
+  return true;
+}
+/* 비밀번호 로그인 — 메일 발송이 필요 없어 매일 쓰기에 적합하다.
+   비밀번호는 Supabase 대시보드에서 관리자가 직접 설정한다. */
+async function cmsLoginPassword(email, password){
+  const r = await fetch(sbUrl()+'/auth/v1/token?grant_type=password', {
+    method:'POST',
+    headers:{'apikey':sbKey(),'content-type':'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok || !j.access_token){
+    const m = j.error_description || j.msg || j.error || '로그인 실패';
+    if(/invalid.*credential|grant/i.test(m)){
+      throw new Error('이메일 또는 비밀번호가 맞지 않습니다. Supabase 대시보드에서 비밀번호를 설정하셨는지 확인해 주세요.');
+    }
+    if(/email.*not.*confirm/i.test(m)){
+      throw new Error('이메일 인증이 완료되지 않은 계정입니다. Supabase 대시보드에서 해당 사용자를 Confirm 처리해 주세요.');
+    }
+    throw new Error(m);
+  }
+  cmsSaveSession({
+    access_token:j.access_token, refresh_token:j.refresh_token,
+    expires_at:j.expires_at, email:(j.user&&j.user.email)||email
+  });
   return true;
 }
 /* 메일 링크를 눌러 ERP로 돌아왔을 때 URL에서 세션을 회수한다.
@@ -6495,33 +6527,40 @@ function renderWebsiteAdmin(){
       <div class="aic-sub">ERP에서 홈페이지 내용을 직접 수정합니다. GitHub 파일을 건드리지 않습니다.</div>
       <div class="panel" style="max-width:520px">
         <h2>관리자 로그인</h2>
-        <div class="aic-sub" style="margin:-8px 0 14px">등록된 관리자 이메일로 <b>로그인 링크</b>를 보냅니다.</div>
+        <div class="aic-sub" style="margin:-8px 0 14px">등록된 관리자 계정으로 로그인합니다.</div>
         <div class="field">
           <label>관리자 이메일</label>
           <input type="email" id="cmsEmail" placeholder="dmswl1701@gmail.com" value="${esc(state.cmsEmail||'')}" autocomplete="email">
         </div>
-        ${state.cmsCodeSent ? `
-        <div class="aic-dm-ok" style="font-size:12.5px;line-height:1.75">
-          📩 <b>${esc(state.cmsEmail||'')}</b> 로 메일을 보냈습니다.<br>
-          메일 속 <b>Sign in</b> 링크를 누르시면 이 화면으로 돌아와 자동으로 로그인됩니다.
-          <div style="margin-top:8px;color:#7A4E0E">· 링크는 <b>한 번만</b>, 그리고 <b>몇 분 안에</b> 눌러야 합니다.<br>
-          · 메일이 안 보이면 스팸함을 확인해 주세요.<br>
-          · <b>같은 브라우저</b>에서 열어야 로그인이 유지됩니다.</div>
+        <div class="field">
+          <label>비밀번호</label>
+          <input type="password" id="cmsPw" placeholder="비밀번호" autocomplete="current-password">
         </div>
-        <div class="modal-actions" style="position:static;border:0;padding-top:14px">
-          <button type="button" class="btn secondary" id="cmsResend">메일 다시 보내기</button>
+        <div class="modal-actions" style="position:static;border:0;padding-top:6px">
+          <button type="button" class="btn" id="cmsPwLogin">로그인</button>
         </div>
-        <details style="margin-top:12px">
-          <summary style="font-size:12.5px;color:var(--text-mute);cursor:pointer;font-weight:400;list-style:revert">숫자 인증번호를 받으신 경우 여기를 눌러 입력</summary>
-          <div class="field" style="margin-top:10px">
+
+        <details style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px" ${state.cmsCodeSent?'open':''}>
+          <summary style="font-size:13px;color:var(--navy);cursor:pointer;font-weight:700;list-style:revert">비밀번호 대신 메일 링크로 로그인</summary>
+          ${state.cmsCodeSent ? `
+          <div class="aic-dm-ok" style="font-size:12.5px;line-height:1.75;margin-top:10px">
+            📩 <b>${esc(state.cmsEmail||'')}</b> 로 메일을 보냈습니다.<br>
+            메일 속 <b>Sign in</b> 링크를 누르시면 이 화면으로 돌아와 자동 로그인됩니다.
+            <div style="margin-top:8px;color:#7A4E0E">· 링크는 <b>한 번만</b>, <b>몇 분 안에</b> 눌러야 합니다.<br>
+            · <b>같은 브라우저</b>에서 열어야 합니다.</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button type="button" class="btn secondary" id="cmsResend">메일 다시 보내기</button>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label>숫자 인증번호를 받으셨다면</label>
             <input type="text" id="cmsCode" placeholder="000000" inputmode="numeric" maxlength="8">
           </div>
-          <button type="button" class="btn" id="cmsVerifyBtn">인증하고 로그인</button>
-        </details>` : `
-        <div class="modal-actions" style="position:static;border:0;padding-top:6px">
-          <button type="button" class="btn" id="cmsSendBtn">로그인 링크 받기</button>
-        </div>`}
-        ${state.cmsErr? `<div class="aic-dm-warn" style="margin-top:12px">${esc(state.cmsErr)}</div>`:''}
+          <button type="button" class="btn secondary" id="cmsVerifyBtn">인증하고 로그인</button>` : `
+          <div class="aic-sub" style="margin:10px 0 12px;font-size:12.5px">무료 플랜은 시간당 메일 발송 수가 제한됩니다. 평소에는 비밀번호 로그인을 권장합니다.</div>
+          <button type="button" class="btn secondary" id="cmsSendBtn">로그인 링크 받기</button>`}
+        </details>
+        ${state.cmsErr? `<div class="aic-dm-warn" style="margin-top:14px">${esc(state.cmsErr)}</div>`:''}
       </div>`;
   }
 
@@ -6692,7 +6731,27 @@ function renderWebsiteAdmin(){
 
 /* ---------- 이벤트 바인딩 ---------- */
 function bindWebsiteAdmin(){
-  // 로그인
+  // 비밀번호 로그인 (기본)
+  const pwBtn=document.getElementById('cmsPwLogin');
+  const doPwLogin = async ()=>{
+    const el=document.getElementById('cmsEmail'), pe=document.getElementById('cmsPw');
+    const email=(el?el.value:'').trim(), pw=(pe?pe.value:'');
+    if(!email){ toast('이메일을 입력해 주세요','warn'); if(el) el.focus(); return; }
+    if(!pw){ toast('비밀번호를 입력해 주세요','warn'); if(pe) pe.focus(); return; }
+    state.cmsEmail=email; state.cmsErr=null;
+    if(pwBtn){ pwBtn.disabled=true; pwBtn.textContent='로그인 중...'; }
+    try{
+      await cmsLoginPassword(email, pw);
+      state.cmsCodeSent=false; state.cmsErr=null; cmsData=null;
+      toast('로그인했어요','ok');
+    }catch(e){ state.cmsErr=e.message; }
+    render();
+  };
+  if(pwBtn) pwBtn.addEventListener('click', doPwLogin);
+  const pwIn=document.getElementById('cmsPw');
+  if(pwIn) pwIn.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doPwLogin(); } });
+
+  // 메일 링크 로그인 (보조)
   const sendBtn=document.getElementById('cmsSendBtn'), resend=document.getElementById('cmsResend');
   const doSend = async ()=>{
     const el=document.getElementById('cmsEmail');
@@ -6704,7 +6763,7 @@ function bindWebsiteAdmin(){
       await cmsSendCode(email);
       state.cmsCodeSent=true;
       toast(email+' 로 인증번호를 보냈어요','ok');
-    }catch(e){ state.cmsErr='인증번호 발송 실패: '+e.message; }
+    }catch(e){ state.cmsErr=e.message; }
     render();
   };
   if(sendBtn) sendBtn.addEventListener('click', doSend);
