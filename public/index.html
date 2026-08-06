@@ -6193,9 +6193,17 @@ async function migrateQuoteLines(){
 // Worker 환경변수: ADMIN_EMAILS / ALLOWED_ORIGIN / ERP_ORIGIN / PUBLIC_ORIGIN / SUPABASE_URL / SUPABASE_SECRET_KEY
 const CMS_API   = 'https://hm-sign-website-cms.dmswl1701.workers.dev';
 const CMS_SITE  = 'https://hm-sign-website.pages.dev';
-const SB_URL    = 'https://ndjxdwsvgoxzzrszsycj.supabase.co';
-const SB_KEY    = 'sb_publishable_UsTuMFM8HqLdKI-8Hf6r9Q';   // 공개(publishable) 키 — 노출되어도 안전
 const CMS_TOKEN_KEY = 'hmCmsSession';
+// Supabase 접속값은 ERP가 이미 쓰는 설정(CLOUD_DEFAULT / 설정·백업에서 입력한 값)을 그대로 재사용한다.
+// 별도로 하드코딩하면 키가 갱신됐을 때 두 곳이 어긋난다.
+function sbUrl(){
+  const c = (typeof cloudCfg==='function') ? cloudCfg() : null;
+  return (c && c.url) || (typeof CLOUD_DEFAULT!=='undefined' ? CLOUD_DEFAULT.url : '');
+}
+function sbKey(){
+  const c = (typeof cloudCfg==='function') ? cloudCfg() : null;
+  return (c && c.key) || (typeof CLOUD_DEFAULT!=='undefined' ? CLOUD_DEFAULT.key : '');
+}
 
 let cmsSession = null;      // {access_token, refresh_token, expires_at, email}
 let cmsData    = null;      // 서버에서 불러온 사이트 설정
@@ -6221,18 +6229,18 @@ function cmsExpired(){
 
 /* ---------- Supabase Auth ---------- */
 async function cmsSendCode(email){
-  const r = await fetch(SB_URL+'/auth/v1/otp', {
+  const r = await fetch(sbUrl()+'/auth/v1/otp', {
     method:'POST',
-    headers:{'apikey':SB_KEY,'content-type':'application/json'},
+    headers:{'apikey':sbKey(),'content-type':'application/json'},
     body: JSON.stringify({email, create_user:true})
   });
   if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,160)); }
   return true;
 }
 async function cmsVerifyCode(email, token){
-  const r = await fetch(SB_URL+'/auth/v1/verify', {
+  const r = await fetch(sbUrl()+'/auth/v1/verify', {
     method:'POST',
-    headers:{'apikey':SB_KEY,'content-type':'application/json'},
+    headers:{'apikey':sbKey(),'content-type':'application/json'},
     body: JSON.stringify({email, token, type:'email'})
   });
   const j = await r.json();
@@ -6246,9 +6254,9 @@ async function cmsVerifyCode(email, token){
 async function cmsRefresh(){
   if(!cmsSession || !cmsSession.refresh_token) return false;
   try{
-    const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token', {
+    const r = await fetch(sbUrl()+'/auth/v1/token?grant_type=refresh_token', {
       method:'POST',
-      headers:{'apikey':SB_KEY,'content-type':'application/json'},
+      headers:{'apikey':sbKey(),'content-type':'application/json'},
       body: JSON.stringify({refresh_token:cmsSession.refresh_token})
     });
     const j = await r.json();
