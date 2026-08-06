@@ -6607,7 +6607,33 @@ function cmsSet(path, val){
 }
 
 /* ---------- 화면 ---------- */
+/* CMS Worker 는 ERP 운영 주소에서 온 요청만 허용한다(ALLOWED_ORIGIN).
+   로컬 파일이나 다른 주소에서 열면 403 origin_not_allowed 가 나므로 미리 안내한다. */
+const CMS_ERP_ORIGIN = 'https://hm-sign-erp.dmswl1701.workers.dev';
+function cmsOriginOk(){ return location.origin === CMS_ERP_ORIGIN; }
+
 function renderWebsiteAdmin(){
+  if(!cmsOriginOk()){
+    return `
+      <div class="topbar"><h1>🌐 홈페이지 관리</h1></div>
+      <div class="panel" style="max-width:620px">
+        <div class="aic-dm-warn" style="line-height:1.8">
+          <b>이 주소에서는 홈페이지 관리를 쓸 수 없습니다.</b><br><br>
+          보안 설정상 <b>ERP 운영 주소</b>에서만 접속이 허용됩니다.<br>
+          지금 열려 있는 주소: <code>${esc(location.origin || location.protocol)}</code>
+        </div>
+        <div class="aic-dm-ok" style="margin-top:14px;line-height:1.8">
+          아래 주소로 접속해 주세요. (즐겨찾기 해두시면 편합니다)<br>
+          <a href="${CMS_ERP_ORIGIN}/" target="_blank" rel="noopener"
+             style="display:inline-block;margin-top:8px;font-weight:700;color:var(--navy);word-break:break-all">
+            ${CMS_ERP_ORIGIN}/ ↗</a>
+        </div>
+        <div class="aic-sub" style="margin-top:14px;font-size:12.5px">
+          ※ 다운로드한 파일(<code>index.html</code>)을 직접 열면 이 화면이 나옵니다.
+          다른 기능은 그대로 쓸 수 있지만, 홈페이지 관리만 운영 주소가 필요합니다.
+        </div>
+      </div>`;
+  }
   if(!cmsSession) cmsSession = cmsLoadSession();
 
   // 1) 로그인 전
