@@ -1,0 +1,12 @@
+{
+  "name": "hm-sign-erp",
+  "private": true,
+  "version": "1.0.0",
+  "description": "HM SIGN ERP - Cloudflare Workers static assets",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.26.0"
+  }
+}
