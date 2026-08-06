@@ -1431,6 +1431,11 @@ function renderHome(){
       </div>`; })()}
     ${(()=>{ const hb=state.homeBanner||{on:true,text:DEFAULT_HOME_BANNER}; if(!hb.on||!hb.text) return '';
       return `<div class="banner" style="position:relative">${esc(hb.text)}<span style="font-size:11px;color:var(--text-mute);margin-left:6px">· <a href="#" class="bannerEdit" style="color:var(--navy)">수정</a></span></div>`; })()}
+    ${(()=>{ const n=(typeof cmsNewInquiryCount==='function')? cmsNewInquiryCount() : 0; if(!n) return '';
+      return `<div class="panel homeInqGo" style="background:var(--green-bg);border-color:#B8DDC7;cursor:pointer">
+        <div style="font-weight:700;font-size:14px;color:var(--green)">🌐 홈페이지 새 문의 ${n}건</div>
+        <div style="font-size:13px;color:var(--green);margin-top:4px">눌러서 확인하고 거래처로 등록하세요 →</div>
+      </div>`; })()}
     <div class="cards">
       <div class="card"><div class="label">오늘 설치</div><div class="value" style="color:${s.todaySites?'var(--amber)':'var(--text-mute)'}">${s.todaySites}건</div></div>
       <div class="card"><div class="label">오늘 제작</div><div class="value" style="color:${s.todayMfg?'var(--amber)':'var(--text-mute)'}">${s.todayMfg}건</div></div>
@@ -6326,6 +6331,71 @@ async function cmsSaveSite(){
   }
 }
 
+/* ---------- 문의 목록 정규화 (Worker 응답 형식 차이 흡수) ---------- */
+function cmsInquiryList(){
+  const d = cmsInquiries;
+  if(!d) return null;
+  if(Array.isArray(d)) return d;
+  for(const k of ['items','data','inquiries','rows','results','list']){
+    if(Array.isArray(d[k])) return d[k];
+  }
+  return null;
+}
+/* 응답 형식을 눈으로 확인 (스펙 불일치 시 진단용) */
+async function cmsDebugInquiries(){
+  try{
+    const raw = await cmsFetch('/api/v1/admin/inquiries');
+    state.cmsInqRaw = JSON.stringify(raw, null, 1).slice(0, 1500);
+  }catch(e){
+    state.cmsInqRaw = '요청 실패: ' + e.message;
+  }
+  render();
+}
+/* HOME 알림용 — 아직 거래처로 등록되지 않은 문의 수 */
+function cmsNewInquiryCount(){
+  const list = cmsInquiryList(); if(!list) return 0;
+  return list.filter(q=>{
+    const n=(q.company||'').trim(); if(!n) return false;
+    return !(state.clients||[]).some(c=>c.name===n);
+  }).length;
+}
+/* 로그인 세션이 있으면 문의만 조용히 불러와 HOME 알림에 사용 */
+async function cmsPrefetchInquiries(){
+  if(cmsInquiries) return;
+  if(!cmsSession) cmsSession = cmsLoadSession();
+  if(!cmsSession) return;
+  try{
+    cmsInquiries = await cmsFetch('/api/v1/admin/inquiries');
+    if(cmsNewInquiryCount()>0 && state.view==='home') render();
+  }catch(e){ /* 권한·네트워크 문제면 조용히 무시 */ }
+}
+/* 문의 → ERP 거래처 등록 */
+async function cmsInquiryToClient(idx){
+  const list = cmsInquiryList(); if(!list) return;
+  const q = list[idx]; if(!q) return;
+  const name = (q.company||'').trim() || (q.name||'').trim();
+  if(!name){ toast('회사명·성함이 없어 등록할 수 없어요','warn'); return; }
+  if((state.clients||[]).some(c=>c.name===name)){ toast('이미 등록된 거래처예요','warn'); return; }
+  if(!confirm('「'+name+'」을(를) 거래처로 등록할까요?\n\n연락처: '+(q.phone||'-')+'\n지역: '+(q.location||'-'))) return;
+  const chain = (typeof deriveChain==='function') ? deriveChain(name) : '';
+  state.clients.push({
+    id:'c_'+Date.now(), name, chain,
+    branch:(typeof branchName==='function')? branchName(name, chain) : '',
+    contact:(q.name||'').trim(), phone:'', mobile:(q.phone||'').trim(),
+    address:(q.location||'').trim(),
+    zonecode:'', sido:'', sigungu:'', dong:'', lat:null, lng:null,
+    email:'', terms:'', discount:0,
+    memo:'홈페이지 문의 접수'
+      + ((q.serviceType||q.service)? ' · 요청: '+(q.serviceType||q.service) : '')
+      + ((q.preferredDate||q.date)? ' · 희망일: '+(q.preferredDate||q.date) : '')
+      + (q.message? '\n'+q.message : '')
+  });
+  await saveClients();
+  logActivity('홈페이지 문의 → 거래처 등록: '+name, '추가');
+  toast(name+' 거래처로 등록했어요','ok');
+  render();
+}
+
 /* ---------- 값 읽기/쓰기 도우미 ---------- */
 function cmsGet(path, dflt){
   const parts = path.split('.');
@@ -6497,24 +6567,30 @@ function renderWebsiteAdmin(){
   }
 
   if(tab==='inquiry'){
-    const list = Array.isArray(cmsInquiries) ? cmsInquiries
-               : (cmsInquiries && Array.isArray(cmsInquiries.items) ? cmsInquiries.items : null);
+    const list = cmsInquiryList();
     body = `
     <div class="panel">
       <h2>홈페이지 문의함 ${list?'('+list.length+')':''}</h2>
+      <div class="aic-sub" style="margin:-8px 0 12px">홈페이지에서 접수된 문의입니다. [거래처 등록]을 누르면 ERP 거래처로 바로 넣을 수 있어요.</div>
       ${list===null
-        ? `<div class="aic-dm-warn">문의 목록을 불러오지 못했습니다. Worker의 <code>/api/v1/admin/inquiries</code> 응답 형식을 확인해야 합니다.</div>`
+        ? `<div class="aic-dm-warn">문의 목록을 불러오지 못했습니다.
+             <div style="margin-top:8px"><button type="button" class="aic-btn" id="cmsInqDebug">응답 형식 확인</button></div>
+             ${state.cmsInqRaw? `<pre class="aic-doc-body" style="margin-top:10px;max-height:220px">${esc(state.cmsInqRaw)}</pre>`:''}
+           </div>`
         : list.length===0
           ? '<div class="empty">접수된 문의가 없어요.</div>'
-          : `<table><thead><tr><th>접수</th><th>성함</th><th>연락처</th><th>회사·매장</th><th>요청</th><th>내용</th></tr></thead><tbody>
-             ${list.map(q=>`<tr>
+          : `<table><thead><tr><th>접수</th><th>성함</th><th>연락처</th><th>회사·매장</th><th>요청</th><th>내용</th><th></th></tr></thead><tbody>
+             ${list.map((q,i)=>{
+               const exists = (state.clients||[]).some(c=>c.name===(q.company||'').trim());
+               return `<tr>
                <td data-l="접수">${esc((q.createdAt||q.created_at||'').toString().slice(0,16).replace('T',' '))}</td>
                <td data-l="성함">${esc(q.name||'')}</td>
                <td data-l="연락처">${esc(q.phone||'')}</td>
                <td data-l="회사">${esc(q.company||'')}</td>
                <td data-l="요청">${esc(q.serviceType||q.service||'')}</td>
-               <td data-l="내용" style="white-space:pre-wrap">${esc((q.message||'').slice(0,120))}</td>
-             </tr>`).join('')}
+               <td data-l="내용" style="white-space:pre-wrap">${esc((q.message||'').slice(0,110))}</td>
+               <td data-l=""><button type="button" class="aic-btn ${exists?'':'aic-btn-primary'} cmsInqAdd" data-i="${i}" ${exists?'disabled':''}>${exists?'등록됨':'거래처 등록'}</button></td>
+             </tr>`;}).join('')}
              </tbody></table>`}
     </div>`;
   }
@@ -6606,6 +6682,17 @@ function bindWebsiteAdmin(){
     cmsData.featuredProjects.push({title:'',category:'',summary:'',coverImageUrl:''});
     render();
   });
+
+  // 문의함
+  document.querySelectorAll('.cmsInqAdd').forEach(el=> el.addEventListener('click', ()=> cmsInquiryToClient(+el.dataset.i)));
+  const idb=document.getElementById('cmsInqDebug');
+  if(idb) idb.addEventListener('click', cmsDebugInquiries);
+  // HOME 새 문의 배너 → 문의함으로
+  document.querySelectorAll('.homeInqGo').forEach(el=> el.addEventListener('click', ()=>{
+    state.view='website'; state.cmsTab='inquiry'; render();
+  }));
+  // HOME 진입 시 문의 미리 불러오기 (로그인 되어 있을 때만)
+  if(state.view==='home' && !cmsInquiries) setTimeout(cmsPrefetchInquiries, 300);
 
   // 저장
   const sv=document.getElementById('cmsSaveBtn');
