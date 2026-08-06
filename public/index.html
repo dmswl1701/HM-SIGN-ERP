@@ -6388,25 +6388,25 @@ async function cmsFetch(path, opts){
   const t = await r.text();
   try{ return t ? JSON.parse(t) : {}; }catch(e){ return {}; }
 }
-/* ---------- 관리자 API 자동 탐색 ----------
-   Worker 의 실제 라우트를 모르는 상태이므로, 로그인된 토큰으로 후보 경로에 GET 을 보내
-   200 이 오는 경로를 찾아 기억한다. (GET 만 사용 — 데이터를 바꾸지 않는다) */
-const CMS_SITE_PATHS = [
-  '/api/v1/admin/site','/api/v1/admin/site-content','/api/v1/admin/content',
-  '/api/v1/admin/settings','/api/v1/admin/config','/api/v1/admin/site_content',
-  '/api/v1/admin/siteContent','/api/v1/admin/cms','/api/v1/admin/page',
-  '/api/v1/admin/pages','/api/v1/admin/home','/api/v1/admin/data',
-  '/api/v1/admin','/api/v1/admin/',
-  '/api/v1/site','/api/v1/content','/api/v1/settings',
-  '/api/admin/site','/api/admin/content','/admin/api/site',
-  '/admin/site','/api/site','/api/v1/public/site'
-];
-const CMS_INQ_PATHS = [
-  '/api/v1/admin/inquiries','/api/v1/admin/inquiry','/api/v1/admin/contacts',
-  '/api/v1/admin/leads','/api/v1/admin/messages','/api/v1/admin/requests',
-  '/api/v1/admin/submissions','/api/v1/admin/enquiries',
-  '/api/v1/inquiries','/api/admin/inquiries','/admin/inquiries','/api/inquiries'
-];
+/* ---------- CMS Worker 실제 라우트 ----------
+   Worker 소스 확인 결과 (worker.js):
+     GET   /api/v1/cms/inquiries              → { inquiries: [...] }
+     PATCH /api/v1/cms/inquiries/{uuid}       → 상태 변경
+     GET   /api/v1/cms/content/{key}          → website_site_content 행
+     PUT   /api/v1/cms/content/{key}          → 저장 (status: draft|review|published)
+     PUT   /api/v1/cms/portfolios/{uuid}      → 포트폴리오 저장
+     DELETE/api/v1/cms/portfolios/{uuid}
+     GET   /api/v1/cms/portfolios/{uuid}/assets
+     POST  /api/v1/cms/portfolios/{uuid}/assets
+   인증: Authorization: Bearer <Supabase JWT>, ADMIN_EMAILS 또는 role=website_admin
+   Origin: ALLOWED_ORIGIN / ERP_ORIGIN 만 허용 */
+const CMS_BASE = '/api/v1/cms';
+// contentKeys 는 Worker 가 화이트리스트로 관리한다. 실제 사용 가능한 키는 실행 시 확인한다.
+const CMS_KEY_CANDIDATES = ['company','banner','hero','services','process','contact','seo','about','home','footer'];
+
+let cmsKeys = null;      // 실제로 존재하는 키 목록
+let cmsRows = {};        // key -> 서버에서 받은 원본 행 (저장 시 같은 모양으로 돌려보냄)
+
 function cmsPathCache(){
   try{ return JSON.parse(localStorage.getItem('hmCmsPaths')||'{}'); }catch(e){ return {}; }
 }
@@ -6414,24 +6414,7 @@ function cmsSavePath(kind, path){
   const c = cmsPathCache(); c[kind]=path;
   try{ localStorage.setItem('hmCmsPaths', JSON.stringify(c)); }catch(e){}
 }
-async function cmsProbe(paths){
-  const results = [];
-  let found = null;
-  for(const p of paths){
-    try{
-      const r = await cmsFetchRaw(p);
-      let note = '';
-      // 404 가 아닌 응답은 본문 일부를 남긴다 — 실제 라우트 힌트가 들어있는 경우가 많다
-      if(r.status !== 404){
-        try{ note = (await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){}
-      }
-      results.push({path:p, status:r.status, note});
-      if(r.status===200 && !found) found = p;   // 끝까지 훑어 전체 그림을 남긴다
-    }catch(e){ results.push({path:p, status:'ERR', note:e.message.slice(0,60)}); }
-  }
-  return {found, results};
-}
-/* 상태코드까지 보기 위한 저수준 호출 (토큰 갱신은 동일하게 처리) */
+/* 상태코드까지 보기 위한 저수준 호출 */
 async function cmsFetchRaw(path, opts){
   opts = opts || {};
   if(cmsExpired()) await cmsRefresh();
@@ -6442,49 +6425,100 @@ async function cmsFetchRaw(path, opts){
   if(opts.body && !headers['content-type']) headers['content-type']='application/json';
   return fetch(CMS_API+path, {method:opts.method||'GET', headers, body:opts.body});
 }
-/* 진단 실행 — 결과를 화면에 표로 보여준다 */
+/* 어떤 콘텐츠 키가 실제로 존재하는지 확인 */
+async function cmsDiscoverKeys(){
+  const found = [], detail = [];
+  for(const k of CMS_KEY_CANDIDATES){
+    try{
+      const r = await cmsFetchRaw(CMS_BASE+'/content/'+k);
+      let note='';
+      if(r.status!==404){ try{ note=(await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){} }
+      detail.push({path:CMS_BASE+'/content/'+k, status:r.status, note});
+      if(r.status===200){
+        found.push(k);
+        try{ cmsRows[k] = await r.json(); }catch(e){ cmsRows[k]=null; }
+      }
+    }catch(e){ detail.push({path:CMS_BASE+'/content/'+k, status:'ERR', note:e.message.slice(0,60)}); }
+  }
+  cmsKeys = found;
+  return {found, detail};
+}
+/* 진단 — 실제 라우트 기준으로 확인 */
 async function cmsDiagnose(){
-  state.cmsDiag = {running:true, site:null, inq:null};
+  state.cmsDiag = {running:true};
   render();
-  const s = await cmsProbe(CMS_SITE_PATHS);
-  const i = await cmsProbe(CMS_INQ_PATHS);
-  if(s.found) cmsSavePath('site', s.found);
-  if(i.found) cmsSavePath('inq', i.found);
-  state.cmsDiag = {running:false, site:s, inq:i};
+  const keys = await cmsDiscoverKeys();
+  const inqRes = [];
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/inquiries');
+    let note=''; try{ note=(await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){}
+    inqRes.push({path:CMS_BASE+'/inquiries', status:r.status, note});
+  }catch(e){ inqRes.push({path:CMS_BASE+'/inquiries', status:'ERR', note:e.message.slice(0,60)}); }
+  state.cmsDiag = {
+    running:false,
+    site:{found: keys.found.length? keys.found.join(', ') : null, results:keys.detail},
+    inq:{found: inqRes[0] && inqRes[0].status===200 ? inqRes[0].path : null, results:inqRes}
+  };
   render();
 }
+/* 서버 행에서 실제 콘텐츠 본문을 꺼낸다 (컬럼명이 구현마다 다를 수 있어 넓게 대응) */
+function cmsRowValue(row){
+  if(!row || typeof row!=='object') return {};
+  if(Array.isArray(row)) row = row[0] || {};
+  if(row.content && typeof row.content==='object') return row.content;
+  for(const f of ['value','data','payload','body','json','content_value']){
+    if(row[f] && typeof row[f]==='object') return row[f];
+    if(typeof row[f]==='string'){ try{ return JSON.parse(row[f]); }catch(e){} }
+  }
+  // 래핑 없이 바로 내려오는 경우
+  const clone = Object.assign({}, row);
+  ['id','content_key','status','created_at','updated_at','updated_by','published_at'].forEach(k=>delete clone[k]);
+  return clone;
+}
+/* 서버에 돌려보낼 본문을 원본 행과 같은 모양으로 만든다 */
+function cmsWrapValue(row, value){
+  if(row && typeof row==='object' && !Array.isArray(row)){
+    for(const f of ['content','value','data','payload','body']){
+      if(row[f] !== undefined) { const o={}; o[f]=value; o.status='published'; return o; }
+    }
+  }
+  return Object.assign({}, value, {status:'published'});
+}
+
 async function cmsLoadAll(){
   state.cmsLoading = true; render();
   try{
-    // 관리자 경로를 자동 탐색해 사용 (한 번 찾으면 기억)
-    const cache = cmsPathCache();
-    let site = null;
-    const sitePaths = cache.site ? [cache.site].concat(CMS_SITE_PATHS.filter(p=>p!==cache.site)) : CMS_SITE_PATHS;
-    for(const p of sitePaths){
-      try{
-        const r = await cmsFetchRaw(p);
-        if(r.status===200){ site = await r.json(); cmsSavePath('site', p); break; }
-      }catch(e){ /* 다음 후보 */ }
-    }
-    // 관리자 경로를 못 찾으면 공개 API 내용으로라도 화면을 채운다 (읽기 전용)
-    if(!site){
+    cmsRows = {};
+    const k = await cmsDiscoverKeys();
+    if(!k.found.length){
+      // 관리자 콘텐츠를 못 읽으면 공개 API 로 화면만 채운다 (읽기 전용)
       const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'}});
-      site = r.ok ? await r.json() : null;
+      cmsData = r.ok ? await r.json() : null;
       state.cmsReadOnly = true;
+      if(!cmsData) throw new Error('홈페이지 내용을 불러오지 못했습니다.');
     } else {
       state.cmsReadOnly = false;
-    }
-    if(!site) throw new Error('홈페이지 내용을 불러오지 못했습니다.');
-    cmsData = site;
-
-    cmsInquiries = null;
-    const inqPaths = cache.inq ? [cache.inq].concat(CMS_INQ_PATHS.filter(p=>p!==cache.inq)) : CMS_INQ_PATHS;
-    for(const p of inqPaths){
+      // 키별 행을 하나의 편집 모델로 합친다
+      cmsData = {};
+      k.found.forEach(key=>{ cmsData[key] = cmsRowValue(cmsRows[key]); });
+      // 공개 API 로 비어 있는 항목을 보완 (처음 저장 전이면 행이 비어 있을 수 있음)
       try{
-        const r = await cmsFetchRaw(p);
-        if(r.status===200){ cmsInquiries = await r.json(); cmsSavePath('inq', p); break; }
-      }catch(e){ /* 다음 후보 */ }
+        const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'}});
+        if(r.ok){
+          const pub = await r.json();
+          Object.keys(pub||{}).forEach(key=>{
+            if(cmsData[key]===undefined || cmsData[key]===null) cmsData[key]=pub[key];
+            else if(typeof cmsData[key]==='object' && !Array.isArray(cmsData[key]) && !Object.keys(cmsData[key]).length) cmsData[key]=pub[key];
+          });
+        }
+      }catch(e){}
     }
+    // 문의함
+    cmsInquiries = null;
+    try{
+      const r = await cmsFetchRaw(CMS_BASE+'/inquiries');
+      if(r.status===200) cmsInquiries = await r.json();
+    }catch(e){}
     state.cmsErr = null;
   }catch(e){
     state.cmsErr = e.message;
@@ -6492,57 +6526,57 @@ async function cmsLoadAll(){
     state.cmsLoading = false; render();
   }
 }
+/* 저장 — 키 단위로 PUT */
 async function cmsSaveSite(){
   if(!cmsData) return;
+  if(state.cmsReadOnly){
+    toast('읽기 전용 상태입니다. [API 진단]으로 콘텐츠 키를 먼저 확인해 주세요','warn');
+    return;
+  }
   const btn = document.getElementById('cmsSaveBtn');
   if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
-  const body = JSON.stringify(cmsData);
-  const cache = cmsPathCache();
-  // 읽기에 성공했던 경로를 우선 시도하고, 메서드는 PUT → POST → PATCH 순서로 확인한다.
-  const paths = cache.site ? [cache.site].concat(CMS_SITE_PATHS.filter(p=>p!==cache.site)) : CMS_SITE_PATHS;
-  const tried = [];
-  let ok = false, lastStatus = null;
+  const keys = (cmsKeys && cmsKeys.length) ? cmsKeys : Object.keys(cmsData);
+  const okList = [], failList = [];
   try{
-    outer:
-    for(const p of paths){
-      for(const m of ['PUT','POST','PATCH']){
-        let r;
-        try{ r = await cmsFetchRaw(p, {method:m, body}); }
-        catch(e){ tried.push(m+' '+p+' → 통신오류'); continue; }
-        lastStatus = r.status;
-        if(r.status>=200 && r.status<300){
-          cmsSavePath('site', p);
-          try{ localStorage.setItem('hmCmsSaveMethod', m); }catch(e){}
-          ok = true; break outer;
-        }
-        tried.push(m+' '+p+' → '+r.status);
-        // 405(메서드 불가)면 다음 메서드, 404면 다음 경로로
-        if(r.status===404) break;
+    for(const key of keys){
+      if(cmsData[key]===undefined) continue;
+      const body = JSON.stringify(cmsWrapValue(cmsRows[key], cmsData[key]));
+      let r;
+      try{ r = await cmsFetchRaw(CMS_BASE+'/content/'+key, {method:'PUT', body}); }
+      catch(e){ failList.push(key+' → 통신오류'); continue; }
+      if(r.status>=200 && r.status<300){
+        okList.push(key);
+        try{ cmsRows[key] = await r.json(); }catch(e){}
+      }else{
+        let msg=''; try{ msg=(await r.text()).replace(/\s+/g,' ').slice(0,80); }catch(e){}
+        failList.push(key+' → '+r.status+(msg?' '+msg:''));
       }
     }
-    if(ok){
-      toast('홈페이지에 반영했어요','ok');
-      logActivity('홈페이지 콘텐츠 수정 (CMS)', '변경');
-      state.cmsErr = null;
-      state.cmsSaveTried = null;
+    if(okList.length && !failList.length){
+      toast('홈페이지에 반영했어요 ('+okList.length+'개 항목)','ok');
+      logActivity('홈페이지 콘텐츠 수정 (CMS): '+okList.join(', '), '변경');
+      state.cmsErr = null; state.cmsSaveTried = null;
+    }else if(okList.length){
+      state.cmsErr = okList.length+'개는 저장됐고, '+failList.length+'개는 실패했습니다.';
+      state.cmsSaveTried = failList;
+      toast('일부만 저장됐어요','warn');
     }else{
-      state.cmsErr = '저장 경로를 찾지 못했습니다 (마지막 응답 '+lastStatus+'). '
-        + 'Worker 의 관리자 저장 엔드포인트가 다른 주소일 수 있습니다.';
-      state.cmsSaveTried = tried;
-      toast('저장 실패 — 아래 진단 결과를 확인해 주세요','warn');
+      state.cmsErr = '저장에 실패했습니다.';
+      state.cmsSaveTried = failList;
+      toast('저장 실패 — 아래 내용을 확인해 주세요','warn');
     }
   }finally{
     if(btn){ btn.disabled=false; btn.textContent='💾 홈페이지에 반영'; }
     render();
   }
 }
-
 /* ---------- 문의 목록 정규화 (Worker 응답 형식 차이 흡수) ---------- */
 function cmsInquiryList(){
   const d = cmsInquiries;
   if(!d) return null;
   if(Array.isArray(d)) return d;
-  for(const k of ['items','data','inquiries','rows','results','list']){
+  // Worker 는 { inquiries: [...] } 형태로 응답한다
+  for(const k of ['inquiries','items','data','rows','results','list']){
     if(Array.isArray(d[k])) return d[k];
   }
   return null;
