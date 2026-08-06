@@ -6388,19 +6388,90 @@ async function cmsFetch(path, opts){
   const t = await r.text();
   try{ return t ? JSON.parse(t) : {}; }catch(e){ return {}; }
 }
+/* ---------- 관리자 API 자동 탐색 ----------
+   Worker 의 실제 라우트를 모르는 상태이므로, 로그인된 토큰으로 후보 경로에 GET 을 보내
+   200 이 오는 경로를 찾아 기억한다. (GET 만 사용 — 데이터를 바꾸지 않는다) */
+const CMS_SITE_PATHS = [
+  '/api/v1/admin/site','/api/v1/admin/site-content','/api/v1/admin/content',
+  '/api/v1/admin/settings','/api/v1/admin/config','/api/v1/admin',
+  '/api/admin/site','/admin/api/site','/api/v1/site'
+];
+const CMS_INQ_PATHS = [
+  '/api/v1/admin/inquiries','/api/v1/admin/inquiry','/api/v1/admin/contacts',
+  '/api/v1/admin/leads','/api/admin/inquiries','/api/v1/inquiries'
+];
+function cmsPathCache(){
+  try{ return JSON.parse(localStorage.getItem('hmCmsPaths')||'{}'); }catch(e){ return {}; }
+}
+function cmsSavePath(kind, path){
+  const c = cmsPathCache(); c[kind]=path;
+  try{ localStorage.setItem('hmCmsPaths', JSON.stringify(c)); }catch(e){}
+}
+async function cmsProbe(paths){
+  const results = [];
+  for(const p of paths){
+    try{
+      const r = await cmsFetchRaw(p);
+      results.push({path:p, status:r.status});
+      if(r.status===200) return {found:p, results};
+    }catch(e){ results.push({path:p, status:'ERR'}); }
+  }
+  return {found:null, results};
+}
+/* 상태코드까지 보기 위한 저수준 호출 (토큰 갱신은 동일하게 처리) */
+async function cmsFetchRaw(path, opts){
+  opts = opts || {};
+  if(cmsExpired()) await cmsRefresh();
+  if(!cmsSession) throw new Error('로그인이 필요합니다');
+  const headers = Object.assign({
+    'authorization':'Bearer '+cmsSession.access_token, 'accept':'application/json'
+  }, opts.headers||{});
+  if(opts.body && !headers['content-type']) headers['content-type']='application/json';
+  return fetch(CMS_API+path, {method:opts.method||'GET', headers, body:opts.body});
+}
+/* 진단 실행 — 결과를 화면에 표로 보여준다 */
+async function cmsDiagnose(){
+  state.cmsDiag = {running:true, site:null, inq:null};
+  render();
+  const s = await cmsProbe(CMS_SITE_PATHS);
+  const i = await cmsProbe(CMS_INQ_PATHS);
+  if(s.found) cmsSavePath('site', s.found);
+  if(i.found) cmsSavePath('inq', i.found);
+  state.cmsDiag = {running:false, site:s, inq:i};
+  render();
+}
 async function cmsLoadAll(){
   state.cmsLoading = true; render();
   try{
-    // 공개 API로 현재 노출 중인 내용을 우선 확보 (관리자 스키마와 동일 형태)
+    // 관리자 경로를 자동 탐색해 사용 (한 번 찾으면 기억)
+    const cache = cmsPathCache();
     let site = null;
-    try{ site = await cmsFetch('/api/v1/admin/site'); }
-    catch(e){
+    const sitePaths = cache.site ? [cache.site].concat(CMS_SITE_PATHS.filter(p=>p!==cache.site)) : CMS_SITE_PATHS;
+    for(const p of sitePaths){
+      try{
+        const r = await cmsFetchRaw(p);
+        if(r.status===200){ site = await r.json(); cmsSavePath('site', p); break; }
+      }catch(e){ /* 다음 후보 */ }
+    }
+    // 관리자 경로를 못 찾으면 공개 API 내용으로라도 화면을 채운다 (읽기 전용)
+    if(!site){
       const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'}});
       site = r.ok ? await r.json() : null;
-      if(!site) throw e;
+      state.cmsReadOnly = true;
+    } else {
+      state.cmsReadOnly = false;
     }
+    if(!site) throw new Error('홈페이지 내용을 불러오지 못했습니다.');
     cmsData = site;
-    try{ cmsInquiries = await cmsFetch('/api/v1/admin/inquiries'); }catch(e){ cmsInquiries = null; }
+
+    cmsInquiries = null;
+    const inqPaths = cache.inq ? [cache.inq].concat(CMS_INQ_PATHS.filter(p=>p!==cache.inq)) : CMS_INQ_PATHS;
+    for(const p of inqPaths){
+      try{
+        const r = await cmsFetchRaw(p);
+        if(r.status===200){ cmsInquiries = await r.json(); cmsSavePath('inq', p); break; }
+      }catch(e){ /* 다음 후보 */ }
+    }
     state.cmsErr = null;
   }catch(e){
     state.cmsErr = e.message;
@@ -6412,21 +6483,40 @@ async function cmsSaveSite(){
   if(!cmsData) return;
   const btn = document.getElementById('cmsSaveBtn');
   if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
+  const body = JSON.stringify(cmsData);
+  const cache = cmsPathCache();
+  // 읽기에 성공했던 경로를 우선 시도하고, 메서드는 PUT → POST → PATCH 순서로 확인한다.
+  const paths = cache.site ? [cache.site].concat(CMS_SITE_PATHS.filter(p=>p!==cache.site)) : CMS_SITE_PATHS;
+  const tried = [];
+  let ok = false, lastStatus = null;
   try{
-    await cmsFetch('/api/v1/admin/site', {method:'PUT', body:JSON.stringify(cmsData)});
-    toast('홈페이지에 반영했어요','ok');
-    logActivity('홈페이지 콘텐츠 수정 (CMS)', '변경');
-    state.cmsErr = null;
-  }catch(e){
-    // PUT 이 아니면 POST 로 한 번 더 시도 (Worker 구현 차이 대응)
-    try{
-      await cmsFetch('/api/v1/admin/site', {method:'POST', body:JSON.stringify(cmsData)});
+    outer:
+    for(const p of paths){
+      for(const m of ['PUT','POST','PATCH']){
+        let r;
+        try{ r = await cmsFetchRaw(p, {method:m, body}); }
+        catch(e){ tried.push(m+' '+p+' → 통신오류'); continue; }
+        lastStatus = r.status;
+        if(r.status>=200 && r.status<300){
+          cmsSavePath('site', p);
+          try{ localStorage.setItem('hmCmsSaveMethod', m); }catch(e){}
+          ok = true; break outer;
+        }
+        tried.push(m+' '+p+' → '+r.status);
+        // 405(메서드 불가)면 다음 메서드, 404면 다음 경로로
+        if(r.status===404) break;
+      }
+    }
+    if(ok){
       toast('홈페이지에 반영했어요','ok');
       logActivity('홈페이지 콘텐츠 수정 (CMS)', '변경');
       state.cmsErr = null;
-    }catch(e2){
-      state.cmsErr = e2.message;
-      toast('저장 실패: '+e2.message,'warn');
+      state.cmsSaveTried = null;
+    }else{
+      state.cmsErr = '저장 경로를 찾지 못했습니다 (마지막 응답 '+lastStatus+'). '
+        + 'Worker 의 관리자 저장 엔드포인트가 다른 주소일 수 있습니다.';
+      state.cmsSaveTried = tried;
+      toast('저장 실패 — 아래 진단 결과를 확인해 주세요','warn');
     }
   }finally{
     if(btn){ btn.disabled=false; btn.textContent='💾 홈페이지에 반영'; }
@@ -6721,8 +6811,30 @@ function renderWebsiteAdmin(){
       </span>
     </div>
     <div class="aic-sub">${esc(cmsSession.email||'')} 로 로그인됨 · 저장하면 홈페이지에 즉시 반영됩니다.
-      <a href="#" id="cmsLogout" style="color:var(--navy);margin-left:8px">로그아웃</a></div>
-    ${state.cmsErr? `<div class="aic-dm-warn" style="margin-bottom:14px">${esc(state.cmsErr)}</div>`:''}
+      <a href="#" id="cmsLogout" style="color:var(--navy);margin-left:8px">로그아웃</a>
+      <a href="#" id="cmsDiagBtn" style="color:var(--navy);margin-left:8px">API 진단</a></div>
+    ${state.cmsReadOnly? `<div class="aic-dm-warn" style="margin-bottom:14px">
+      ⚠️ 관리자 저장 경로를 아직 찾지 못해 <b>현재 홈페이지에 공개된 내용</b>을 읽기 전용으로 보여주고 있습니다.
+      위 <b>API 진단</b>을 눌러 실제 경로를 찾아 주세요.</div>`:''}
+    ${state.cmsErr? `<div class="aic-dm-warn" style="margin-bottom:14px">${esc(state.cmsErr)}
+      ${(state.cmsSaveTried&&state.cmsSaveTried.length)? `<pre class="aic-doc-body" style="margin-top:10px;max-height:180px">${esc(state.cmsSaveTried.join('\n'))}</pre>`:''}
+    </div>`:''}
+    ${(()=>{ const d=state.cmsDiag; if(!d) return '';
+      if(d.running) return `<div class="panel"><div class="empty">관리자 API 경로를 찾는 중이에요...</div></div>`;
+      const row=(label,res)=>`
+        <div style="margin-bottom:12px">
+          <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:6px">${label}
+            ${res.found? `<span class="aic-badge done">찾음: ${esc(res.found)}</span>` : `<span class="aic-badge rej">못 찾음</span>`}</div>
+          <pre class="aic-doc-body" style="max-height:150px">${esc(res.results.map(x=>x.status+'  '+x.path).join('\n'))}</pre>
+        </div>`;
+      return `<div class="panel">
+        <h2>🔎 API 진단 결과</h2>
+        <div class="aic-sub" style="margin:-8px 0 12px">200 = 사용 가능 · 404 = 없는 주소 · 401/403 = 권한 문제</div>
+        ${row('사이트 설정', d.site)}
+        ${row('문의함', d.inq)}
+        <div class="aic-dm-ok" style="font-size:12px">모두 404 라면 Worker 의 관리자 라우트 주소가 위 후보와 다릅니다.
+        이 화면을 캡처해서 알려주시면 맞춰 수정하겠습니다.</div>
+      </div>`; })()}
     <div class="chips">
       ${T('content','대표 배너·회사정보')}${T('services','사인 종류·절차')}${T('portfolio','시공사례')}${T('seo','SEO')}${T('inquiry','문의함')}
     </div>
@@ -6786,6 +6898,8 @@ function bindWebsiteAdmin(){
   if(lo) lo.addEventListener('click', e=>{ e.preventDefault(); cmsLogout(); });
   const rt=document.getElementById('cmsRetry');
   if(rt) rt.addEventListener('click', ()=>{ state.cmsErr=null; cmsData=null; cmsLoadAll(); });
+  const dg=document.getElementById('cmsDiagBtn');
+  if(dg) dg.addEventListener('click', e=>{ e.preventDefault(); cmsDiagnose(); });
 
   // 탭
   document.querySelectorAll('.cmsTab').forEach(el=> el.addEventListener('click', ()=>{ state.cmsTab=el.dataset.t; render(); }));
