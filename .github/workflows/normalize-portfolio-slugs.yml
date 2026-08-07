@@ -1,0 +1,40 @@
+name: Normalize portfolio slugs
+on:
+  push:
+    branches: [fix/portfolio-ascii-slugs-20260807]
+    paths:
+      - .github/scripts/normalize_portfolio_slugs.py
+      - .github/workflows/normalize-portfolio-slugs.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[slug-normalization-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/portfolio-ascii-slugs-20260807
+          fetch-depth: 0
+      - run: python .github/scripts/normalize_portfolio_slugs.py
+      - name: Validate ERP JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('public/index.html').read_text(encoding='utf-8')
+          a=s.find('<script>'); b=s.rfind('</script>')
+          assert a>=0 and b>a
+          Path('/tmp/app.js').write_text(s[a+8:b],encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+          grep -q "V43.0807.BATCH6" public/index.html
+          grep -q "cmsPortfolioSlugNeedsMigration" public/index.html
+          grep -q "project-" public/index.html
+      - name: Commit patch
+        run: |
+          git config user.name "OpenAI"
+          git config user.email "noreply@openai.com"
+          git add public/index.html
+          git commit -m "Normalize portfolio slugs for reliable public detail [slug-normalization-applied]"
+          git push origin HEAD:fix/portfolio-ascii-slugs-20260807
