@@ -962,7 +962,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V43.0807.BATCH1';
+const APP_BUILD = 'V43.0807.BATCH2';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -970,7 +970,7 @@ async function checkNewVersion(){
     const r = await fetch(location.pathname + '?v=' + Date.now(), {cache:'no-store'});
     if(!r.ok) return;
     const txt = await r.text();
-    const m = txt.match(new RegExp("const APP_BUILD = 'V43.0807.BATCH1']+)'"));
+    const m = txt.match(new RegExp("const APP_BUILD = 'V43.0807.BATCH2']+)'"));
     if(m && m[1] !== APP_BUILD){
       state.newVersion = m[1];
       showUpdateBar();
@@ -6706,7 +6706,7 @@ function cmsPortfolioDraftsSave(){
   try{
     const arr=(cmsPortfolios||[]).map(p=>({
       id:p.id,title:p.title||'',category:p.category||'',region:p.region||'',summary:p.summary||'',
-      status:p.status||'draft',erpQuoteId:p.erpQuoteId||'',_local:true
+      status:p.status||'draft',erpQuoteId:p.erpQuoteId||'',slug:p.slug||'',_local:true
     }));
     localStorage.setItem(CMS_PORTFOLIO_DRAFT_KEY,JSON.stringify(arr));
   }catch(e){}
@@ -6714,11 +6714,19 @@ function cmsPortfolioDraftsSave(){
 function cmsPortfolioNormalize(p){
   return {
     id:p && p.id ? p.id : cmsUuid(),
-    title:(p&&p.title)||'', category:(p&&p.category)||'', region:(p&&p.region)||'',
+    title:(p&&p.title)||'', category:(p&&(p.category||p.industry))||'', region:(p&&p.region)||'',
     summary:(p&&p.summary)||'', status:(p&&p.status)||'draft',
     erpQuoteId:(p&&(p.erpQuoteId||p.erp_quote_id))||'',
     slug:(p&&p.slug)||'', cover:(p&&(p.cover||p.cover_url||p.coverUrl))||''
   };
+}
+function cmsPortfolioSlug(p){
+  if(p.slug) return p.slug;
+  const title=String(p.title||'project').normalize('NFKC').toLowerCase()
+    .replace(/[^0-9a-z가-힣]+/g,'-').replace(/^-+|-+$/g,'').slice(0,150) || 'project';
+  const suffix=String(p.id||cmsUuid()).replace(/-/g,'').slice(0,8);
+  p.slug=(title+'-'+suffix).slice(0,190);
+  return p.slug;
 }
 function cmsPortfolioArray(j){
   if(Array.isArray(j)) return j;
@@ -6770,8 +6778,14 @@ async function cmsSavePortfolio(id, opts){
     const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+id,{
       method:'PUT',
       body:JSON.stringify({
-        title:p.title, category:p.category, region:p.region, summary:p.summary,
-        status:p.status||'draft', erpQuoteId:p.erpQuoteId||undefined
+        title:p.title,
+        slug:cmsPortfolioSlug(p),
+        industry:p.category||'',
+        region:p.region||'',
+        summary:p.summary||'',
+        materials:[],
+        featured:false,
+        status:p.status||'draft'
       })
     });
     if(r.status>=200 && r.status<300){
@@ -6825,7 +6839,7 @@ function cmsQueueStats(q){
   };
 }
 function cmsQueueStatusText(item){
-  if(item.status==='uploading') return '업로드 중…';
+  if(item.status==='uploading') return '이미지 최적화·업로드 중…';
   if(item.status==='done') return '업로드 완료';
   if(item.status==='failed') return item.error||'업로드 실패';
   return '업로드 대기';
@@ -6841,7 +6855,7 @@ function cmsQueueAdd(portfolioId, files){
     if(!file || !/^image\/(jpeg|png|webp)$/i.test(file.type||'')){
       skipped++; continue;
     }
-    if(file.size>25*1024*1024){ skipped++; continue; }
+    if(file.size>15*1024*1024){ skipped++; continue; }
     const dup=q.items.some(x=>x.file && x.file.name===file.name && x.file.size===file.size && x.file.lastModified===file.lastModified);
     if(dup){ skipped++; continue; }
     q.items.push({
@@ -6895,38 +6909,61 @@ function cmsQueueUpdateDom(portfolioId){
   });
 }
 
-async function cmsUploadAsset(portfolioId,file,role){
-  const endpoint=CMS_BASE+'/portfolios/'+portfolioId+'/assets';
-  const name=file.name||'photo.jpg';
-  const attempts=['file','asset','image','upload','original'];
-  const notes=[];
-  for(const field of attempts){
-    const fd=new FormData();
-    fd.append(field,file,name);
-    fd.append('role',role||'gallery');
-    fd.append('kind',role||'gallery');
-    fd.append('asset_kind',role||'gallery');
-    fd.append('filename',name);
-    fd.append('original_filename',name);
-    fd.append('mime_type',file.type||'application/octet-stream');
-    const r=await cmsFetchRaw(endpoint,{method:'POST',body:fd});
-    if(r.status>=200&&r.status<300){
-      const j=await r.json().catch(()=>({}));
-      return j;
+async function cmsImageToWebp(file,maxEdge,quality,suffix,maxBytes){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((resolve,reject)=>{
+      const el=new Image();
+      el.onload=()=>resolve(el);
+      el.onerror=()=>reject(new Error('이미지 파일을 읽지 못했습니다'));
+      el.src=url;
+    });
+    const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    if(!w||!h) throw new Error('이미지 크기를 확인하지 못했습니다');
+    const scale=Math.min(1,maxEdge/Math.max(w,h));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(w*scale));
+    canvas.height=Math.max(1,Math.round(h*scale));
+    const ctx=canvas.getContext('2d',{alpha:true});
+    if(!ctx) throw new Error('이미지 변환 기능을 사용할 수 없습니다');
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    let q=quality, blob=null;
+    for(let attempt=0;attempt<4;attempt++){
+      blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',q));
+      if(blob && blob.type==='image/webp' && blob.size<=maxBytes) break;
+      q=Math.max(.45,q-.12);
     }
-    let text=''; try{text=(await r.text()).replace(/\s+/g,' ').slice(0,220);}catch(e){}
-    notes.push(field+':'+r.status+(text?' '+text:''));
-    if(!(r.status===400 && /invalid_upload|invalid.*file|missing.*file|upload.*invalid/i.test(text)))
-      throw new Error(r.status+(text?' '+text:''));
+    if(!blob || blob.type!=='image/webp') throw new Error('WebP 변환에 실패했습니다');
+    if(blob.size>maxBytes) throw new Error('최적화 후에도 파일 용량이 너무 큽니다');
+    const base=(file.name||'photo').replace(/\.[^.]+$/,'').replace(/[^0-9A-Za-z가-힣._-]+/g,'_').slice(0,100)||'photo';
+    return new File([blob],base+'-'+suffix+'.webp',{type:'image/webp',lastModified:Date.now()});
+  }finally{
+    URL.revokeObjectURL(url);
   }
-  const r=await cmsFetchRaw(endpoint,{
-    method:'POST',body:file,
-    headers:{'content-type':file.type||'application/octet-stream','x-file-name':encodeURIComponent(name),'x-upload-role':role||'gallery'}
-  });
+}
+
+async function cmsUploadAsset(portfolioId,file,role,sortOrder){
+  if(!file || !/^image\/(jpeg|png|webp)$/i.test(file.type||'')) throw new Error('JPG·PNG·WebP 사진만 올릴 수 있습니다');
+  if(file.size>15*1024*1024) throw new Error('원본 사진은 장당 15MB 이하여야 합니다');
+
+  // CMS Worker의 실제 계약에 맞춰 브라우저에서 파생 이미지를 만든다.
+  const optimized=await cmsImageToWebp(file,2000,.84,'optimized',8*1024*1024);
+  const thumbnail=await cmsImageToWebp(file,640,.78,'thumbnail',2*1024*1024);
+
+  const fd=new FormData();
+  fd.append('original',file,file.name||'photo.jpg');
+  fd.append('optimized',optimized,optimized.name);
+  fd.append('thumbnail',thumbnail,thumbnail.name);
+  fd.append('role',role||'gallery');
+  fd.append('sortOrder',String(Number.isFinite(sortOrder)?sortOrder:0));
+
+  const endpoint=CMS_BASE+'/portfolios/'+portfolioId+'/assets';
+  const r=await cmsFetchRaw(endpoint,{method:'POST',body:fd});
   if(r.status>=200&&r.status<300) return await r.json().catch(()=>({}));
   let text=''; try{text=(await r.text()).replace(/\s+/g,' ').slice(0,220);}catch(e){}
-  notes.push('raw:'+r.status+(text?' '+text:''));
-  throw new Error((text||'업로드 형식을 서버가 거부했습니다')+' · '+notes.join(' | '));
+  if(r.status===400 && /invalid_upload/i.test(text)) throw new Error('업로드 형식 오류: 원본/최적화/썸네일 생성값을 서버가 거부했습니다');
+  if(r.status===400 && /invalid_file/i.test(text)) throw new Error('사진 형식 또는 용량이 서버 제한을 넘었습니다');
+  throw new Error(r.status+(text?' '+text:''));
 }
 
 async function cmsStartUploadQueue(portfolioId,retryOnly){
@@ -6951,7 +6988,7 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
       const item=targets[i];
       item.status='uploading'; item.error=''; cmsQueueUpdateDom(portfolioId);
       try{
-        item.result=await cmsUploadAsset(portfolioId,item.file,item.role);
+        item.result=await cmsUploadAsset(portfolioId,item.file,item.role,q.items.indexOf(item));
         item.status='done';
       }catch(e){
         item.status='failed'; item.error=(e&&e.message?e.message:String(e)).slice(0,220);
@@ -7348,7 +7385,7 @@ function renderWebsiteAdmin(){
           <div class="aic-doc-head">📥 새 사진 일괄 등록</div>
           <label class="cms-upload-zone cmsUploadZone" data-id="${esc(p.id)}">
             <b>사진 여러 장을 여기에 끌어놓거나 클릭해서 선택</b>
-            <span>JPG · PNG · WebP / 장당 25MB 이하 · 한 번에 50~100장 권장 (최대 120장 준비)</span>
+            <span>JPG · PNG · WebP / 장당 15MB 이하 · 한 번에 50~100장 권장 (최대 120장 준비)</span>
             <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
           </label>
 
