@@ -967,7 +967,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V43.0807.BATCH4';
+const APP_BUILD = 'V43.0807.BATCH5';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -7050,7 +7050,7 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
 
   const failed=q.items.filter(x=>x.status==='failed');
   const done=q.items.filter(x=>x.status==='done');
-  if(done.length) toast(done.length+'장 업로드 완료','ok');
+  if(done.length) toast(done.length+'장 업로드 완료 · 사진을 눌러 확인한 뒤 홈페이지 공개를 누르세요','ok');
   if(failed.length){
     state.cmsErr='사진 '+failed.length+'장 업로드 실패';
     state.cmsSaveTried=failed.map(x=>(x.file&&x.file.name?x.file.name:'사진')+' → '+x.error);
@@ -7088,37 +7088,78 @@ async function cmsEnsureCover(portfolioId){
 
 function cmsShowAssetPreview(portfolioId,assetId){
   const asset=(cmsAssets[portfolioId]||[]).find(x=>x.id===assetId); if(!asset) return;
-  const src=asset.preview_url||asset.public_url||asset.url||asset.thumbnail_url||'';
+  const src=asset.image_url||asset.optimized_url||asset.preview_url||asset.public_url||asset.url||asset.thumbnail_url||'';
   if(!src){ toast('미리보기 주소가 없어요','warn'); return; }
   const old=document.getElementById('cmsAssetPreviewModal'); if(old) old.remove();
   const wrap=document.createElement('div');
   wrap.id='cmsAssetPreviewModal';
   wrap.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(7,15,27,.82);display:grid;place-items:center;padding:18px';
-  wrap.innerHTML=`<section role="dialog" aria-modal="true" aria-label="시공사진 미리보기" style="width:min(1000px,96vw);max-height:94vh;background:#fff;border-radius:14px;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+  wrap.innerHTML=`<section role="dialog" aria-modal="true" aria-label="시공사진 미리보기" style="width:min(1100px,96vw);max-height:94vh;background:#fff;border-radius:14px;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.35)">
     <div style="position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><b style="color:var(--navy)">${asset.role==='cover'?'대표사진':'시공사진 미리보기'}</b><button type="button" id="cmsAssetPreviewClose" class="aic-btn">닫기 ✕</button></div>
     <div style="padding:12px;background:#F3F5F8;text-align:center"><img src="${esc(src)}" alt="시공사진" style="max-width:100%;max-height:72vh;object-fit:contain;border-radius:9px;background:#fff"></div>
-    ${asset.role==='cover'?'<div class="aic-dm-ok" style="margin:12px 14px">현재 홈페이지 대표사진입니다.</div>':`<div style="padding:12px 14px 16px;text-align:right"><button type="button" id="cmsAssetMakeCover" class="aic-btn aic-btn-primary">이 사진을 대표사진으로</button></div>`}
+    <div style="padding:12px 14px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <button type="button" id="cmsAssetDelete" class="aic-btn aic-btn-rej">이 사진 삭제</button>
+      ${asset.role==='cover'?'<div class="aic-dm-ok" style="margin:0;flex:1;min-width:220px">현재 홈페이지 대표사진입니다. 다른 사진을 눌러 대표사진을 바꿀 수 있어요.</div>':`<button type="button" id="cmsAssetMakeCover" class="aic-btn aic-btn-primary">이 사진을 대표사진으로</button>`}
+    </div>
   </section>`;
   document.body.appendChild(wrap);
   const close=()=>wrap.remove();
   document.getElementById('cmsAssetPreviewClose').onclick=close;
   wrap.addEventListener('click',e=>{if(e.target===wrap)close();});
   const make=document.getElementById('cmsAssetMakeCover');
-  if(make) make.onclick=async()=>{ make.disabled=true; make.textContent='변경 중...'; await cmsAssetRole(portfolioId,assetId,'cover'); close(); toast('대표사진으로 바꿨어요','ok'); render(); };
+  if(make) make.onclick=async()=>{
+    make.disabled=true; make.textContent='변경 중...';
+    const ok=await cmsAssetRole(portfolioId,assetId,'cover',{silent:true});
+    if(ok){ close(); toast('대표사진으로 바꿨어요','ok'); render(); }
+    else{ make.disabled=false; make.textContent='이 사진을 대표사진으로'; }
+  };
+  const del=document.getElementById('cmsAssetDelete');
+  if(del) del.onclick=async()=>{
+    const ok=await cmsDeleteAsset(portfolioId,assetId);
+    if(ok){ close(); render(); }
+  };
 }
 
-async function cmsAssetRole(portfolioId,assetId,role){
+async function cmsAssetRole(portfolioId,assetId,role,opts){
+  opts=opts||{};
   try{
     const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets/'+assetId,{
       method:'PATCH',body:JSON.stringify({role})
     });
-    if(r.status>=200&&r.status<300){ toast('사진 분류를 바꿨어요','ok'); await cmsRefreshAssets(portfolioId); }
-    else{
-      let m=''; try{m=(await r.text()).slice(0,140);}catch(e){}
-      toast('변경 실패 ('+r.status+') '+m,'warn');
+    if(r.status>=200&&r.status<300){
+      await cmsRefreshAssets(portfolioId);
+      if(!opts.silent) toast('사진 분류를 바꿨어요','ok');
+      return true;
     }
+    let m=''; try{m=(await r.text()).slice(0,140);}catch(e){}
+    toast('변경 실패 ('+r.status+') '+m,'warn');
   }catch(e){ toast('변경 실패: '+e.message,'warn'); }
+  return false;
 }
+
+async function cmsDeleteAsset(portfolioId,assetId){
+  const asset=(cmsAssets[portfolioId]||[]).find(x=>x.id===assetId); if(!asset) return false;
+  const msg=asset.role==='cover'
+    ? '현재 대표사진입니다. 삭제할까요?\n\n삭제 후 남은 사진이 있으면 첫 사진을 대표사진으로 자동 지정합니다.'
+    : '이 사진을 삭제할까요?\n\n홈페이지 상세에서도 함께 사라집니다.';
+  if(!confirm(msg)) return false;
+  try{
+    const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets/'+assetId,{method:'DELETE'});
+    if(r.status>=200&&r.status<300){
+      await cmsRefreshAssets(portfolioId);
+      if(asset.role==='cover' && (cmsAssets[portfolioId]||[]).length){
+        await cmsEnsureCover(portfolioId);
+        await cmsRefreshAssets(portfolioId);
+      }
+      toast('사진을 삭제했어요','ok');
+      return true;
+    }
+    let m=''; try{m=(await r.text()).slice(0,140);}catch(e){}
+    toast('사진 삭제 실패 ('+r.status+') '+m,'warn');
+  }catch(e){ toast('사진 삭제 실패: '+e.message,'warn'); }
+  return false;
+}
+
 
 /* ---------- 문의 목록 정규화 (Worker 응답 형식 차이 흡수) ---------- */
 function cmsInquiryList(){
@@ -7446,7 +7487,7 @@ function renderWebsiteAdmin(){
             <div class="cms-project-meta">${esc(p.region||'지역 미입력')} · ${statusLabel} · 업로드 사진 ${assets.length}장</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button type="button" class="aic-btn aic-btn-primary cmsPjPublish" data-id="${esc(p.id)}" ${(q.running||st.ready)?'disabled':''}>${q.running?'사진 업로드 중…':((p.status||'draft')==='published'?'✅ 홈페이지 공개중':'🌐 홈페이지 공개')}</button>
+            <button type="button" class="aic-btn aic-btn-primary cmsPjPublish" data-id="${esc(p.id)}" ${(q.running||st.ready||(!(assets.length)&&((p.status||'draft')!=='published')))?'disabled':''}>${q.running?'사진 업로드 중…':(!assets.length&&((p.status||'draft')!=='published')?'사진을 먼저 올려주세요':((p.status||'draft')==='published'?'✅ 홈페이지 공개중':'🌐 홈페이지 공개'))}</button>
             <button type="button" class="aic-btn aic-btn-rej cmsPjDel" data-id="${esc(p.id)}">삭제</button>
           </div>
         </div>
@@ -7463,7 +7504,7 @@ function renderWebsiteAdmin(){
           <div class="aic-doc-head">📥 사진 추가</div>
           <label class="cms-upload-zone cmsUploadZone" data-id="${esc(p.id)}">
             <b>사진을 끌어놓거나 클릭해서 여러 장 선택</b>
-            <span>선택 즉시 자동 업로드 · 첫 사진은 자동 대표 · JPG/PNG/WebP · 장당 15MB 이하</span>
+            <span>선택 즉시 자동 업로드 · 첫 사진은 대표로 지정 · 업로드 후 사진을 눌러 대표 변경/삭제 가능 · JPG/PNG/WebP · 장당 15MB 이하</span>
             <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
           </label>
 
@@ -7676,6 +7717,7 @@ function bindWebsiteAdmin(){
       return;
     }
     if(cmsQueue(p.id).running || cmsQueue(p.id).items.some(x=>x.status==='ready')){toast('사진 업로드가 끝난 뒤 공개해 주세요','warn');return;}
+    if(!(cmsAssets[p.id]||[]).length){toast('사진을 한 장 이상 올린 뒤 공개해 주세요','warn');return;}
     p.status='published';
     await cmsEnsureCover(p.id);
     const ok=await cmsSavePortfolio(p.id,{silent:true,noRender:true});
