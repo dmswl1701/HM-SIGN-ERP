@@ -2,7 +2,9 @@ name: Fix portfolio publish flow
 on:
   push:
     branches: [fix/portfolio-publish-flow-20260807]
-    paths: [.github/scripts/fix_portfolio_publish_flow.py]
+    paths:
+      - .github/scripts/fix_portfolio_publish_flow.py
+      - .github/workflows/fix-portfolio-publish-flow.yml
 permissions:
   contents: write
 jobs:
