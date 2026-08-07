@@ -17,6 +17,15 @@ jobs:
           ref: fix/portfolio-admin-simple-20260807
           fetch-depth: 0
       - run: python .github/scripts/portfolio_admin_simple.py
+      - name: Normalize generated JS newline
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("if(!confirm('이 시공사례를 홈페이지에서 내릴까요?\n사진과 내용은 삭제되지 않고 비공개로만 바뀝니다.'))", "if(!confirm('이 시공사례를 홈페이지에서 내릴까요?\\n사진과 내용은 삭제되지 않고 비공개로만 바뀝니다.'))")
+          p.write_text(s,encoding='utf-8')
+          PY
       - name: Validate JavaScript and UX tokens
         shell: bash
         run: |
