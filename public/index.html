@@ -464,6 +464,11 @@
   .cms-asset img{display:block; width:100%; aspect-ratio:4/3; object-fit:cover;}
   .cms-asset-ph{display:grid; place-items:center; aspect-ratio:4/3; background:#EEF1F6; color:var(--text-mute); font-size:11px;}
   .cms-asset select,.cms-asset button{width:100%; border:0; border-top:1px solid var(--border); padding:6px; font-size:11.5px; font-family:inherit; background:#fff; cursor:pointer;}
+  .cms-asset{position:relative; cursor:pointer; transition:.16s ease;}
+  .cms-asset:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(13,31,58,.10); border-color:#AFC0D5;}
+  .cms-asset-preview{display:block!important; width:100%!important; padding:0!important; border:0!important; background:#EEF1F6!important; cursor:zoom-in!important;}
+  .cms-cover-badge{position:absolute;left:7px;top:7px;z-index:2;padding:4px 7px;border-radius:999px;background:rgba(17,43,77,.9);color:#fff;font-size:10px;font-weight:800;pointer-events:none;}
+  .cms-photo-help{font-size:10.5px;color:var(--text-mute);}
   .cms-project{border:1px solid var(--border); border-radius:12px; background:#fff; padding:16px; margin-bottom:14px;}
   .cms-project-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;}
   .cms-project-title{font-size:16px; font-weight:800; color:var(--navy); line-height:1.45;}
@@ -962,7 +967,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V43.0807.BATCH3';
+const APP_BUILD = 'V43.0807.BATCH4';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -970,7 +975,7 @@ async function checkNewVersion(){
     const r = await fetch(location.pathname + '?v=' + Date.now(), {cache:'no-store'});
     if(!r.ok) return;
     const txt = await r.text();
-    const m = txt.match(new RegExp("const APP_BUILD = 'V43.0807.BATCH3']+)'"));
+    const m = txt.match(/const APP_BUILD = '([^']+)'/);
     if(m && m[1] !== APP_BUILD){
       state.newVersion = m[1];
       showUpdateBar();
@@ -6902,8 +6907,11 @@ function cmsQueueAdd(portfolioId, files){
   }
   if(input.length>limit) toast('한 번에 최대 '+limit+'장까지 준비합니다. 나머지는 다음 묶음으로 올려 주세요','warn');
   if(skipped) toast(skipped+'장은 중복·형식·용량 문제로 제외했어요','warn');
-  if(added) toast(added+'장을 업로드 대기열에 준비했어요','ok');
+  if(added) toast(added+'장 준비 완료 · 자동 업로드를 시작합니다','ok');
   render();
+  const pj=(cmsPortfolios||[]).find(x=>x.id===portfolioId);
+  if(added && pj && (pj.title||'').trim()) setTimeout(()=>cmsStartUploadQueue(portfolioId,false),0);
+  else if(added) toast('프로젝트 제목을 입력하면 사진이 자동으로 올라갑니다','warn');
 }
 function cmsQueueRemove(portfolioId,itemId){
   const q=cmsQueue(portfolioId); if(q.running) return;
@@ -7036,6 +7044,10 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
   q.running=false;
   await cmsRefreshAssets(portfolioId);
 
+  // 업로드 도중 추가된 사진이 있으면 버튼 없이 다음 묶음도 자동 진행한다.
+  const moreReady=q.items.some(x=>x.status==='ready');
+  if(moreReady){ render(); setTimeout(()=>cmsStartUploadQueue(portfolioId,false),0); return; }
+
   const failed=q.items.filter(x=>x.status==='failed');
   const done=q.items.filter(x=>x.status==='done');
   if(done.length) toast(done.length+'장 업로드 완료','ok');
@@ -7072,6 +7084,27 @@ async function cmsEnsureCover(portfolioId){
     }
   }catch(e){}
   return false;
+}
+
+function cmsShowAssetPreview(portfolioId,assetId){
+  const asset=(cmsAssets[portfolioId]||[]).find(x=>x.id===assetId); if(!asset) return;
+  const src=asset.preview_url||asset.public_url||asset.url||asset.thumbnail_url||'';
+  if(!src){ toast('미리보기 주소가 없어요','warn'); return; }
+  const old=document.getElementById('cmsAssetPreviewModal'); if(old) old.remove();
+  const wrap=document.createElement('div');
+  wrap.id='cmsAssetPreviewModal';
+  wrap.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(7,15,27,.82);display:grid;place-items:center;padding:18px';
+  wrap.innerHTML=`<section role="dialog" aria-modal="true" aria-label="시공사진 미리보기" style="width:min(1000px,96vw);max-height:94vh;background:#fff;border-radius:14px;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+    <div style="position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px"><b style="color:var(--navy)">${asset.role==='cover'?'대표사진':'시공사진 미리보기'}</b><button type="button" id="cmsAssetPreviewClose" class="aic-btn">닫기 ✕</button></div>
+    <div style="padding:12px;background:#F3F5F8;text-align:center"><img src="${esc(src)}" alt="시공사진" style="max-width:100%;max-height:72vh;object-fit:contain;border-radius:9px;background:#fff"></div>
+    ${asset.role==='cover'?'<div class="aic-dm-ok" style="margin:12px 14px">현재 홈페이지 대표사진입니다.</div>':`<div style="padding:12px 14px 16px;text-align:right"><button type="button" id="cmsAssetMakeCover" class="aic-btn aic-btn-primary">이 사진을 대표사진으로</button></div>`}
+  </section>`;
+  document.body.appendChild(wrap);
+  const close=()=>wrap.remove();
+  document.getElementById('cmsAssetPreviewClose').onclick=close;
+  wrap.addEventListener('click',e=>{if(e.target===wrap)close();});
+  const make=document.getElementById('cmsAssetMakeCover');
+  if(make) make.onclick=async()=>{ make.disabled=true; make.textContent='변경 중...'; await cmsAssetRole(portfolioId,assetId,'cover'); close(); toast('대표사진으로 바꿨어요','ok'); render(); };
 }
 
 async function cmsAssetRole(portfolioId,assetId,role){
@@ -7384,13 +7417,10 @@ function renderWebsiteAdmin(){
     <div class="panel">
       <h2>시공사례 관리 (${list.length})</h2>
       <div class="aic-sub" style="margin:-8px 0 10px;line-height:1.7">
-        한 공사를 <b>프로젝트 1개</b>로 만들고 사진을 한꺼번에 준비한 뒤 업로드합니다.
-        기존 사진 800장도 <b>현장별 50~100장씩</b> 나눠 등록하는 방식으로 운영하세요.
+        <b>프로젝트 만들기 → 사진 선택 → 홈페이지 공개</b>, 세 단계만 쓰면 됩니다.<br>
+        사진을 고르면 자동 저장·최적화·업로드되고, 첫 사진은 자동으로 대표사진이 됩니다.
       </div>
-      <div class="cms-flow">
-        <span>1 프로젝트 선택/생성</span><span>2 제목 확인</span><span>3 사진 여러 장 끌어놓기</span>
-        <span>4 일괄 업로드</span><span>5 대표·전/후 분류</span><span>6 공개</span>
-      </div>
+      <div class="cms-flow"><span>1 프로젝트</span><span>2 사진 선택 = 자동 업로드</span><span>3 홈페이지 공개</span></div>
       <div class="field" style="margin-top:14px">
         <label>ERP 현장에서 가져오기</label>
         <select id="cmsPjFromSite">
@@ -7401,7 +7431,6 @@ function renderWebsiteAdmin(){
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="aic-btn aic-btn-primary" id="cmsPjFromSiteAdd">＋ 이 현장을 시공사례로</button>
         <button type="button" class="aic-btn" id="cmsPjAdd">＋ 새 시공사례</button>
-        <button type="button" class="aic-btn" id="cmsPjReload">↻ 서버 목록 새로고침</button>
       </div>
     </div>
 
@@ -7417,8 +7446,7 @@ function renderWebsiteAdmin(){
             <div class="cms-project-meta">${esc(p.region||'지역 미입력')} · ${statusLabel} · 업로드 사진 ${assets.length}장</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button type="button" class="aic-btn aic-btn-primary cmsPjPublish" data-id="${esc(p.id)}">${(p.status||'draft')==='published'?'🌐 공개중':'🌐 홈페이지 공개'}</button>
-            <button type="button" class="aic-btn cmsPjSave" data-id="${esc(p.id)}">💾 프로젝트 저장</button>
+            <button type="button" class="aic-btn aic-btn-primary cmsPjPublish" data-id="${esc(p.id)}" ${(q.running||st.ready)?'disabled':''}>${q.running?'사진 업로드 중…':((p.status||'draft')==='published'?'✅ 홈페이지 공개중':'🌐 홈페이지 공개')}</button>
             <button type="button" class="aic-btn aic-btn-rej cmsPjDel" data-id="${esc(p.id)}">삭제</button>
           </div>
         </div>
@@ -7429,17 +7457,13 @@ function renderWebsiteAdmin(){
           <div class="field"><label>지역</label><input type="text" class="cmsPj" data-id="${esc(p.id)}" data-f="region" value="${esc(p.region||'')}" placeholder="예: 인천 중구"></div>
         </div>
         <div class="field"><label>한 줄 설명</label><textarea class="cmsPj" data-id="${esc(p.id)}" data-f="summary" rows="2" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(p.summary||'')}</textarea></div>
-        <div class="field"><label>공개 상태</label>
-          <select class="cmsPj" data-id="${esc(p.id)}" data-f="status">
-            ${['draft','review','published'].map(v=>`<option value="${v}" ${(p.status||'draft')===v?'selected':''}>${v==='draft'?'작성중(홈페이지 비공개)':v==='review'?'검토':'공개'}</option>`).join('')}
-          </select>
-        </div>
+        <div class="aic-sub" style="margin:-2px 0 12px;font-size:11.5px">입력 내용은 칸을 벗어나면 자동 저장됩니다. ${(p.status||'draft')==='published'?'<b>현재 홈페이지 공개중</b>':'아직 홈페이지에는 비공개입니다.'}</div>
 
         <div class="aic-docs">
-          <div class="aic-doc-head">📥 새 사진 일괄 등록</div>
+          <div class="aic-doc-head">📥 사진 추가</div>
           <label class="cms-upload-zone cmsUploadZone" data-id="${esc(p.id)}">
-            <b>사진 여러 장을 여기에 끌어놓거나 클릭해서 선택</b>
-            <span>JPG · PNG · WebP / 장당 15MB 이하 · 한 번에 50~100장 권장 (최대 120장 준비)</span>
+            <b>사진을 끌어놓거나 클릭해서 여러 장 선택</b>
+            <span>선택 즉시 자동 업로드 · 첫 사진은 자동 대표 · JPG/PNG/WebP · 장당 15MB 이하</span>
             <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
           </label>
 
@@ -7447,30 +7471,23 @@ function renderWebsiteAdmin(){
             ${q.items.map(item=>`<div class="cms-upload-item ${item.status==='failed'?'is-failed':item.status==='done'?'is-done':''}" id="cmsQI_${cmsQueueKey(item.id)}" draggable="${q.running?'false':'true'}" data-pid="${esc(p.id)}" data-qid="${esc(item.id)}">
               <img src="${esc(item.url)}" alt="업로드 대기 사진">
               ${q.running?'':`<button type="button" class="cms-upload-remove cmsQueueRemove" data-pid="${esc(p.id)}" data-qid="${esc(item.id)}" title="대기열에서 제거">×</button>`}
-              <div class="cms-upload-info"><div class="cms-upload-name" title="${esc(item.file&&item.file.name||'')}">${esc(item.file&&item.file.name||'사진')}</div><div class="cms-upload-status" id="cmsQS_${cmsQueueKey(item.id)}">${esc(cmsQueueStatusText(item))}</div></div>
-              <select class="cmsQueueRole" data-pid="${esc(p.id)}" data-qid="${esc(item.id)}" ${q.running?'disabled':''}>
-                ${[['gallery','갤러리'],['cover','대표'],['before','시공전'],['after','시공후']].map(([v,l])=>`<option value="${v}" ${item.role===v?'selected':''}>${l}</option>`).join('')}
-              </select>
+              <div class="cms-upload-info"><div class="cms-upload-name" title="${esc(item.file&&item.file.name||'')}">${esc(item.file&&item.file.name||'사진')}</div><div class="cms-upload-status" id="cmsQS_${cmsQueueKey(item.id)}">${item.role==='cover'?'대표 · ':''}${esc(cmsQueueStatusText(item))}</div></div>
             </div>`).join('')}
           </div>
           <div class="cms-upload-progress"><i id="cmsQBar_${key}" style="width:${st.total?Math.round((st.done+st.failed)/st.total*100):0}%"></i></div>
           <div class="cms-upload-toolbar">
-            <button type="button" class="aic-btn aic-btn-primary cmsUploadStart" data-id="${esc(p.id)}" ${q.running?'disabled':''}>${q.running?'업로드 중…':'⬆ '+st.total+'장 일괄 업로드'}</button>
-            ${st.failed?`<button type="button" class="aic-btn cmsUploadRetry" data-id="${esc(p.id)}" ${q.running?'disabled':''}>실패 ${st.failed}장만 재시도</button>`:''}
-            <button type="button" class="aic-btn cmsUploadClear" data-id="${esc(p.id)}" ${q.running?'disabled':''}>대기열 비우기</button>
-            <span class="cms-upload-summary" id="cmsQCount_${key}">전체 ${st.total} · 완료 ${st.done} · 실패 ${st.failed}</span>
-          </div>`:'<div class="aic-sub" style="margin-top:9px;font-size:11.5px">선택한 사진은 바로 서버로 올라가지 않습니다. 미리 확인하고 대표/전/후를 정한 뒤 <b>일괄 업로드</b>를 누르세요.</div>'}
+            ${st.failed?`<button type="button" class="aic-btn cmsUploadRetry" data-id="${esc(p.id)}" ${q.running?'disabled':''}>실패 ${st.failed}장 다시 올리기</button>`:''}
+            <span class="cms-upload-summary" id="cmsQCount_${key}">${q.running?'자동 업로드 중 · ':''}전체 ${st.total} · 완료 ${st.done} · 실패 ${st.failed}</span>
+          </div>`:'<div class="aic-sub" style="margin-top:9px;font-size:11.5px">사진을 선택하면 별도 버튼 없이 바로 업로드됩니다.</div>'}
         </div>
 
-        <div class="cms-existing-head"><b>✅ 서버에 등록된 사진 (${assets.length})</b><span style="font-size:10.5px;color:var(--text-mute)">대표/전/후 분류는 언제든 변경 가능</span></div>
+        <div class="cms-existing-head"><b>✅ 올라간 사진 (${assets.length})</b><span class="cms-photo-help">사진 클릭 → 크게 확인 · 대표사진 변경</span></div>
         ${assets.length?`<div class="cms-assets">${assets.map(a=>{
           const src=a.preview_url||a.public_url||a.url||a.thumbnail_url||'';
           return `<div class="cms-asset">
-            ${src?`<img src="${esc(src)}" alt="">`:'<div class="cms-asset-ph">미리보기 없음</div>'}
-            <select class="cmsAssetRole" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}">
-              ${[['cover','대표'],['before','시공전'],['after','시공후'],['gallery','갤러리']].map(([v,l])=>`<option value="${v}" ${a.role===v?'selected':''}>${l}</option>`).join('')}
-            </select>
-          </div>`;}).join('')}</div>`:'<div class="aic-doc-empty">아직 서버에 등록된 사진이 없어요.</div>'}
+            ${a.role==='cover'?'<span class="cms-cover-badge">대표</span>':''}
+            ${src?`<button type="button" class="cms-asset-preview cmsAssetPreview" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}"><img src="${esc(src)}" alt="시공사진"></button>`:'<div class="cms-asset-ph">미리보기 없음</div>'}
+          </div>`;}).join('')}</div>`:'<div class="aic-doc-empty">아직 올라간 사진이 없어요.</div>'}
       </div>`;}).join(''):'<div class="panel"><div class="empty">등록된 시공사례가 없어요. 위에서 현장을 가져오거나 새 시공사례를 만들어 주세요.</div></div>'}`;
   }
 
@@ -7523,7 +7540,7 @@ function renderWebsiteAdmin(){
     <div class="topbar"><h1>🌐 홈페이지 관리</h1>
       <span style="display:flex;gap:8px;align-items:center">
         <a class="btn secondary" href="${CMS_SITE}" target="_blank" rel="noopener">홈페이지 보기 ↗</a>
-        <button type="button" class="btn" id="cmsSaveBtn">${tab==='portfolio'?'💾 시공사례 저장':'💾 홈페이지에 반영'}</button>
+        ${tab==='portfolio'?'':`<button type="button" class="btn" id="cmsSaveBtn">💾 홈페이지에 반영</button>`}
       </span>
     </div>
     <div class="aic-sub">${esc(cmsSession.email||'')} 로 로그인됨 · ${tab==='portfolio'?'시공사례는 <b>공개</b> 상태인 프로젝트만 홈페이지에 표시됩니다.':'저장하면 홈페이지에 즉시 반영됩니다.'}
@@ -7640,10 +7657,25 @@ function bindWebsiteAdmin(){
   // 시공사례
   document.querySelectorAll('.cmsPj').forEach(el=>el.addEventListener('change',()=>{
     const p=(cmsPortfolios||[]).find(x=>x.id===el.dataset.id);
-    if(p){ p[el.dataset.f]=el.value; cmsPortfolioDraftsSave(); }
+    if(!p) return;
+    p[el.dataset.f]=el.value; cmsPortfolioDraftsSave();
+    if((p.title||'').trim()){
+      cmsSavePortfolio(p.id,{silent:true,noRender:true}).then(ok=>{
+        if(ok && cmsQueue(p.id).items.some(x=>x.status==='ready') && !cmsQueue(p.id).running) cmsStartUploadQueue(p.id,false);
+      });
+    }
   }));
   document.querySelectorAll('.cmsPjPublish').forEach(el=>el.addEventListener('click',async()=>{
     const p=(cmsPortfolios||[]).find(x=>x.id===el.dataset.id); if(!p) return;
+    if((p.status||'draft')==='published'){
+      if(!confirm('이 시공사례를 홈페이지에서 내릴까요?\n사진과 내용은 삭제되지 않고 비공개로만 바뀝니다.')) return;
+      p.status='draft';
+      const ok=await cmsSavePortfolio(p.id,{silent:true,noRender:true});
+      if(ok){cmsPortfolioDraftsSave();toast('홈페이지에서 비공개로 바꿨어요','ok');await cmsLoadPortfolios();render();}
+      else{toast('비공개 변경에 실패했어요','warn');render();}
+      return;
+    }
+    if(cmsQueue(p.id).running || cmsQueue(p.id).items.some(x=>x.status==='ready')){toast('사진 업로드가 끝난 뒤 공개해 주세요','warn');return;}
     p.status='published';
     await cmsEnsureCover(p.id);
     const ok=await cmsSavePortfolio(p.id,{silent:true,noRender:true});
@@ -7653,10 +7685,9 @@ function bindWebsiteAdmin(){
       await cmsLoadPortfolios();
       render();
     }else{
-      toast('공개 저장에 실패했어요','warn'); render();
+      p.status='draft'; toast('공개 저장에 실패했어요','warn'); render();
     }
   }));
-  document.querySelectorAll('.cmsPjSave').forEach(el=>el.addEventListener('click',()=>cmsSavePortfolio(el.dataset.id)));
   document.querySelectorAll('.cmsPjDel').forEach(el=>el.addEventListener('click',()=>cmsDeletePortfolio(el.dataset.id)));
   const ja=document.getElementById('cmsPjAdd');
   if(ja) ja.addEventListener('click',()=>{
@@ -7680,9 +7711,6 @@ function bindWebsiteAdmin(){
     cmsPortfolioDraftsSave();
     toast('현장을 가져왔어요. 제목 확인 후 사진을 한꺼번에 넣어 주세요','ok'); render();
   });
-  const jr=document.getElementById('cmsPjReload');
-  if(jr) jr.addEventListener('click',async()=>{await cmsLoadPortfolios();render();});
-
   document.querySelectorAll('.cmsAssetStage').forEach(el=>el.addEventListener('change',e=>{
     cmsQueueAdd(el.dataset.id,[...e.target.files]); e.target.value='';
   }));
@@ -7695,10 +7723,7 @@ function bindWebsiteAdmin(){
     });
   });
   document.querySelectorAll('.cmsQueueRemove').forEach(el=>el.addEventListener('click',()=>cmsQueueRemove(el.dataset.pid,el.dataset.qid)));
-  document.querySelectorAll('.cmsQueueRole').forEach(el=>el.addEventListener('change',()=>cmsQueueSetRole(el.dataset.pid,el.dataset.qid,el.value)));
-  document.querySelectorAll('.cmsUploadStart').forEach(el=>el.addEventListener('click',()=>cmsStartUploadQueue(el.dataset.id,false)));
   document.querySelectorAll('.cmsUploadRetry').forEach(el=>el.addEventListener('click',()=>cmsStartUploadQueue(el.dataset.id,true)));
-  document.querySelectorAll('.cmsUploadClear').forEach(el=>el.addEventListener('click',()=>cmsQueueClear(el.dataset.id,false)));
 
   let cmsDragQueueId=null, cmsDragPid=null;
   document.querySelectorAll('.cms-upload-item[draggable="true"]').forEach(el=>{
@@ -7708,8 +7733,8 @@ function bindWebsiteAdmin(){
     el.addEventListener('dragend',()=>{cmsDragQueueId=null;cmsDragPid=null;});
   });
 
-  document.querySelectorAll('.cmsAssetRole').forEach(el=>el.addEventListener('change',()=>
-    cmsAssetRole(el.dataset.pid,el.dataset.aid,el.value)));
+  document.querySelectorAll('.cmsAssetPreview').forEach(el=>el.addEventListener('click',()=>
+    cmsShowAssetPreview(el.dataset.pid,el.dataset.aid)));
 
   // 문의함
   document.querySelectorAll('.cmsInqDetail').forEach(el=> el.addEventListener('click', ()=> cmsShowInquiryDetail(+el.dataset.i)));
