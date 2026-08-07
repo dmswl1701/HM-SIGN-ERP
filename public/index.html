@@ -6523,6 +6523,23 @@ function cmsRowValue(row){
   ['id','content_key','status','created_at','updated_at','updated_by','published_at'].forEach(k=>delete clone[k]);
   return clone;
 }
+/* CMS 반복형 데이터 정규화 — 구버전/래핑 응답도 항상 배열로 흡수 */
+function cmsAsArray(value){
+  if(Array.isArray(value)) return value;
+  if(value===null || value===undefined || value==='') return [];
+  if(typeof value==='string'){
+    try{ return cmsAsArray(JSON.parse(value)); }catch(e){ return []; }
+  }
+  if(typeof value==='object'){
+    for(const k of ['items','data','rows','results','list','steps','services','process']){
+      if(Array.isArray(value[k])) return value[k];
+    }
+    const vals = Object.values(value);
+    if(vals.length && vals.every(v=>typeof v==='string' || (v && typeof v==='object'))) return vals;
+  }
+  return [];
+}
+
 /* 서버에 돌려보낼 본문을 원본 행과 같은 모양으로 만든다 */
 function cmsWrapValue(row, value){
   if(row && typeof row==='object' && !Array.isArray(row)){
@@ -6561,6 +6578,10 @@ async function cmsLoadAll(){
         }
       }catch(e){}
     }
+    // 반복형 콘텐츠는 저장 형태가 배열/객체/JSON 문자열이어도 편집 화면에서는 배열로 통일
+    cmsData.services = cmsAsArray(cmsData.services);
+    cmsData.process = cmsAsArray(cmsData.process);
+
     // 문의함
     cmsInquiries = null;
     try{
@@ -6769,7 +6790,7 @@ function cmsInquiryList(){
 /* 응답 형식을 눈으로 확인 (스펙 불일치 시 진단용) */
 async function cmsDebugInquiries(){
   try{
-    const raw = await cmsFetch('/api/v1/admin/inquiries');
+    const raw = await cmsFetch(CMS_BASE+'/inquiries');
     state.cmsInqRaw = JSON.stringify(raw, null, 1).slice(0, 1500);
   }catch(e){
     state.cmsInqRaw = '요청 실패: ' + e.message;
@@ -6790,7 +6811,7 @@ async function cmsPrefetchInquiries(){
   if(!cmsSession) cmsSession = cmsLoadSession();
   if(!cmsSession) return;
   try{
-    cmsInquiries = await cmsFetch('/api/v1/admin/inquiries');
+    cmsInquiries = await cmsFetch(CMS_BASE+'/inquiries');
     if(cmsNewInquiryCount()>0 && state.view==='home') render();
   }catch(e){ /* 권한·네트워크 문제면 조용히 무시 */ }
 }
@@ -6819,6 +6840,54 @@ async function cmsInquiryToClient(idx){
   logActivity('홈페이지 문의 → 거래처 등록: '+name, '추가');
   toast(name+' 거래처로 등록했어요','ok');
   render();
+}
+
+/* 문의 상세보기 — 실제 응답 객체를 읽기 전용으로 전부 확인 */
+function cmsShowInquiryDetail(idx){
+  const list = cmsInquiryList();
+  const q = list && list[idx];
+  if(!q){ toast('문의 내용을 찾지 못했어요','warn'); return; }
+  const old = document.getElementById('cmsInquiryDetailModal');
+  if(old) old.remove();
+  const labels = {
+    createdAt:'접수일시', created_at:'접수일시', name:'성함/담당자', contact_name:'성함/담당자',
+    phone:'연락처', mobile:'연락처', company:'회사/매장명', company_name:'회사/매장명',
+    location:'설치 장소', address:'설치 장소', serviceType:'요청', service:'요청',
+    preferredDate:'희망 일정', preferred_date:'희망 일정', date:'희망 일정',
+    budget:'예산', expected_budget:'예산', message:'프로젝트 내용', content:'프로젝트 내용',
+    consented:'개인정보 동의', consent:'개인정보 동의', source_url:'접수 페이지', status:'상태', id:'문의 ID'
+  };
+  const order = ['createdAt','created_at','name','contact_name','phone','mobile','company','company_name','location','address','serviceType','service','preferredDate','preferred_date','date','budget','expected_budget','message','content','consented','consent','status','source_url','id'];
+  const seen = new Set();
+  const keys = [];
+  order.concat(Object.keys(q)).forEach(k=>{
+    if(seen.has(k) || q[k]===undefined || q[k]===null || q[k]==='') return;
+    seen.add(k); keys.push(k);
+  });
+  const phoneKeys = new Set(['phone','mobile']);
+  const rows = keys.map(k=>{
+    let v=q[k];
+    if(typeof v==='object'){ try{ v=JSON.stringify(v,null,2); }catch(e){ v=String(v); } }
+    const safe=esc(String(v));
+    const val=phoneKeys.has(k)
+      ? `<a href="tel:${esc(String(v).replace(/[^0-9+]/g,''))}" style="color:var(--navy);font-weight:700">${safe}</a>`
+      : `<div style="white-space:pre-wrap;word-break:break-word">${safe}</div>`;
+    return `<div style="padding:11px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--text-mute);font-weight:700;margin-bottom:5px">${esc(labels[k]||k)}</div>${val}</div>`;
+  }).join('');
+  const wrap=document.createElement('div');
+  wrap.id='cmsInquiryDetailModal';
+  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,24,48,.52);display:flex;justify-content:flex-end';
+  wrap.innerHTML=`<section role="dialog" aria-modal="true" aria-label="문의 상세" style="width:min(560px,94vw);height:100%;background:#fff;box-shadow:-12px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column">
+    <div style="padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-size:12px;color:var(--text-mute)">홈페이지 문의</div><b style="font-size:20px;color:var(--navy)">${esc(q.company||q.company_name||q.name||q.contact_name||'문의 상세')}</b></div><button type="button" id="cmsInqDetailClose" class="aic-btn">닫기 ✕</button></div>
+    <div style="padding:8px 22px 28px;overflow:auto;flex:1">${rows || '<div class="empty">표시할 내용이 없어요.</div>'}</div>
+    <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end"><button type="button" id="cmsInqDetailToClient" class="aic-btn aic-btn-primary">거래처 등록</button></div>
+  </section>`;
+  document.body.appendChild(wrap);
+  const close=()=>wrap.remove();
+  document.getElementById('cmsInqDetailClose').onclick=close;
+  wrap.addEventListener('click',e=>{ if(e.target===wrap) close(); });
+  document.addEventListener('keydown',function escClose(e){ if(e.key==='Escape' && document.getElementById('cmsInquiryDetailModal')){ close(); document.removeEventListener('keydown',escClose); } });
+  document.getElementById('cmsInqDetailToClient').onclick=()=>{ close(); cmsInquiryToClient(idx); };
 }
 
 /* ---------- 값 읽기/쓰기 도우미 ---------- */
@@ -6968,7 +7037,8 @@ function renderWebsiteAdmin(){
   }
 
   if(tab==='services'){
-    const list = Array.isArray(cmsData.services)? cmsData.services : [];
+    const list = cmsAsArray(cmsData.services);
+    const processList = cmsAsArray(cmsData.process);
     body = `
     <div class="panel">
       <h2>사인 종류 (${list.length})</h2>
@@ -6984,9 +7054,9 @@ function renderWebsiteAdmin(){
     </div>
 
     <div class="panel">
-      <h2>진행 절차 (${(cmsData.process||[]).length})</h2>
+      <h2>진행 절차 (${processList.length})</h2>
       <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "프로세스" 페이지에 단계별로 표시됩니다.</div>
-      ${(cmsData.process||[]).map((p,i)=>`
+      ${processList.map((p,i)=>`
         <div class="cms-row">
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
           <input type="text" class="cmsPrc" data-i="${i}" value="${esc(p||'')}" placeholder="단계 이름" style="flex:1">
@@ -7103,7 +7173,7 @@ function renderWebsiteAdmin(){
            </div>`
         : list.length===0
           ? '<div class="empty">접수된 문의가 없어요.</div>'
-          : `<table><thead><tr><th>접수</th><th>성함</th><th>연락처</th><th>회사·매장</th><th>요청</th><th>내용</th><th></th></tr></thead><tbody>
+          : `<table><thead><tr><th>접수</th><th>성함</th><th>연락처</th><th>회사·매장</th><th>요청</th><th>내용</th><th>상세</th><th></th></tr></thead><tbody>
              ${list.map((q,i)=>{
                const exists = (state.clients||[]).some(c=>c.name===(q.company||'').trim());
                return `<tr>
@@ -7113,6 +7183,7 @@ function renderWebsiteAdmin(){
                <td data-l="회사">${esc(q.company||'')}</td>
                <td data-l="요청">${esc(q.serviceType||q.service||'')}</td>
                <td data-l="내용" style="white-space:pre-wrap">${esc((q.message||'').slice(0,110))}</td>
+               <td data-l="상세"><button type="button" class="aic-btn cmsInqDetail" data-i="${i}">상세보기</button></td>
                <td data-l=""><button type="button" class="aic-btn ${exists?'':'aic-btn-primary'} cmsInqAdd" data-i="${i}" ${exists?'disabled':''}>${exists?'등록됨':'거래처 등록'}</button></td>
              </tr>`;}).join('')}
              </tbody></table>`}
@@ -7290,6 +7361,7 @@ function bindWebsiteAdmin(){
     cmsAssetRole(el.dataset.pid, el.dataset.aid, el.value)));
 
   // 문의함
+  document.querySelectorAll('.cmsInqDetail').forEach(el=> el.addEventListener('click', ()=> cmsShowInquiryDetail(+el.dataset.i)));
   document.querySelectorAll('.cmsInqAdd').forEach(el=> el.addEventListener('click', ()=> cmsInquiryToClient(+el.dataset.i)));
   const idb=document.getElementById('cmsInqDebug');
   if(idb) idb.addEventListener('click', cmsDebugInquiries);
