@@ -1,0 +1,54 @@
+name: Fix CMS upload contract
+
+on:
+  push:
+    branches:
+      - fix/cms-upload-contract-20260807
+    paths:
+      - .github/scripts/fix_cms_upload_contract.py
+      - .github/workflows/fix-cms-upload-contract.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[cms-upload-contract-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cms-upload-contract-20260807
+          fetch-depth: 0
+      - name: Apply exact CMS contract patch
+        run: python .github/scripts/fix_cms_upload_contract.py
+      - name: JavaScript syntax check
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('public/index.html').read_text(encoding='utf-8')
+          a=s.index('<script>')+len('<script>')
+          b=s.rindex('</script>')
+          Path('/tmp/app.js').write_text(s[a:b],encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+      - name: Contract checks
+        shell: bash
+        run: |
+          grep -q "slug:cmsPortfolioSlug(p)" public/index.html
+          grep -q "industry:p.category" public/index.html
+          grep -q "fd.append('original'" public/index.html
+          grep -q "fd.append('optimized'" public/index.html
+          grep -q "fd.append('thumbnail'" public/index.html
+          grep -q "fd.append('sortOrder'" public/index.html
+          grep -q "V43.0807.BATCH2" public/index.html
+          ! grep -q "const attempts=\['file','asset','image','upload','original'\]" public/index.html
+      - name: Commit patched ERP
+        shell: bash
+        run: |
+          git config user.name "OpenAI"
+          git config user.email "noreply@openai.com"
+          git add public/index.html
+          git commit -m "Fix portfolio save and image upload contract [cms-upload-contract-applied]"
+          git push origin HEAD:fix/cms-upload-contract-20260807
