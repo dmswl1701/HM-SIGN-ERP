@@ -468,6 +468,16 @@
   .cms-asset:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(13,31,58,.10); border-color:#AFC0D5;}
   .cms-asset-preview{display:block!important; width:100%!important; padding:0!important; border:0!important; background:#EEF1F6!important; cursor:zoom-in!important;}
   .cms-cover-badge{position:absolute;left:7px;top:7px;z-index:2;padding:4px 7px;border-radius:999px;background:rgba(17,43,77,.9);color:#fff;font-size:10px;font-weight:800;pointer-events:none;}
+  /* 사진 역할 지정 — 사진 아래 작은 버튼 4개. 손가락으로 눌러야 하므로 최소 30px. */
+  .cms-role-pick{display:grid; grid-template-columns:repeat(4,1fr); gap:3px; margin-top:5px;}
+  .cms-role-btn{
+    min-height:30px; padding:0 2px; border:1px solid var(--border); border-radius:6px;
+    background:#fff; color:#5b6470; font-size:10.5px; font-weight:700; line-height:1.1;
+    cursor:pointer; white-space:nowrap; transition:.15s;
+  }
+  .cms-role-btn:hover:not(:disabled){border-color:var(--navy); color:var(--navy);}
+  .cms-role-btn.is-on{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .cms-role-btn:disabled{opacity:.5; cursor:default;}
   .cms-photo-help{font-size:10.5px;color:var(--text-mute);}
   .cms-project{border:1px solid var(--border); border-radius:12px; background:#fff; padding:16px; margin-bottom:14px;}
   .cms-project-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;}
@@ -6778,6 +6788,18 @@ function cmsPortfolioArray(j){
   }
   return [];
 }
+/* 사진 역할 선택지 — 홈페이지가 이 값으로 "시공 전 → 시공 후" 흐름을 만든다.
+   ⚠ CMS Worker 의 allowedRoles 에 있는 값만 넣을 것. 없는 값을 보내면 400 이 난다.
+     현재 Worker 허용: cover · before · after · gallery
+     'progress'(제작·시공 과정) 는 Worker 에 추가된 뒤 여기에 넣으면 홈페이지는
+     이미 대응돼 있어 코드 수정 없이 바로 표시된다. */
+const CMS_ROLE_CHOICES=[
+  {key:'cover',   label:'대표',    hint:'목록에 보이는 대표 사진 (현장당 1장)'},
+  {key:'before',  label:'시공 전', hint:'작업 전 현장 모습'},
+  {key:'after',   label:'시공 후', hint:'완성된 모습'},
+  {key:'gallery', label:'현장',    hint:'그 밖의 현장 사진'}
+];
+
 async function cmsRefreshAssets(portfolioId){
   try{
     const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets');
@@ -7538,12 +7560,16 @@ function renderWebsiteAdmin(){
           </div>`:'<div class="aic-sub" style="margin-top:9px;font-size:11.5px">사진을 선택하면 별도 버튼 없이 바로 업로드됩니다.</div>'}
         </div>
 
-        <div class="cms-existing-head"><b>✅ 올라간 사진 (${assets.length})</b><span class="cms-photo-help">사진 클릭 → 크게 확인 · 대표사진 변경</span></div>
+        <div class="cms-existing-head"><b>✅ 올라간 사진 (${assets.length})</b><span class="cms-photo-help">사진 아래 버튼으로 시공 전/후 구분 · 사진 클릭 → 크게 보기</span></div>
         ${assets.length?`<div class="cms-assets">${assets.map(a=>{
           const src=a.preview_url||a.public_url||a.url||a.thumbnail_url||'';
+          const role=(a.role||'gallery').toLowerCase();
           return `<div class="cms-asset">
-            ${a.role==='cover'?'<span class="cms-cover-badge">대표</span>':''}
+            ${role==='cover'?'<span class="cms-cover-badge">대표</span>':''}
             ${src?`<button type="button" class="cms-asset-preview cmsAssetPreview" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}"><img src="${esc(src)}" alt="시공사진"></button>`:'<div class="cms-asset-ph">미리보기 없음</div>'}
+            <div class="cms-role-pick">${CMS_ROLE_CHOICES.map(r=>
+              `<button type="button" class="cms-role-btn cmsAssetRoleBtn${role===r.key?' is-on':''}" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}" data-role="${r.key}" title="${esc(r.hint)}">${esc(r.label)}</button>`
+            ).join('')}</div>
           </div>`;}).join('')}</div>`:'<div class="aic-doc-empty">아직 올라간 사진이 없어요.</div>'}
       </div>`;}).join(''):'<div class="panel"><div class="empty">등록된 시공사례가 없어요. 위에서 현장을 가져오거나 새 시공사례를 만들어 주세요.</div></div>'}`;
   }
@@ -7793,6 +7819,16 @@ function bindWebsiteAdmin(){
 
   document.querySelectorAll('.cmsAssetPreview').forEach(el=>el.addEventListener('click',()=>
     cmsShowAssetPreview(el.dataset.pid,el.dataset.aid)));
+
+  // 사진 역할 지정 (시공 전 / 시공 후 / 대표 / 현장)
+  document.querySelectorAll('.cmsAssetRoleBtn').forEach(el=>el.addEventListener('click',async()=>{
+    if(el.classList.contains('is-on')) return;          // 이미 그 역할이면 아무것도 안 한다
+    const btns=el.parentElement.querySelectorAll('.cms-role-btn');
+    btns.forEach(b=>b.disabled=true);
+    const ok=await cmsAssetRole(el.dataset.pid, el.dataset.aid, el.dataset.role);
+    btns.forEach(b=>b.disabled=false);
+    if(ok) render();                                     // 서버 반영 후 화면 갱신
+  }));
 
   // 문의함
   document.querySelectorAll('.cmsInqDetail').forEach(el=> el.addEventListener('click', ()=> cmsShowInquiryDetail(+el.dataset.i)));
