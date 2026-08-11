@@ -624,6 +624,60 @@ Worker 에 canvas 가 없어 **유료 기능(Cloudflare Images)** 이 필요하�
 
 ---
 
+---
+
+# 2026-08-11 추가 인계 (6) — 구글 드라이브 연동 제거 · 인트로 되돌림
+
+`APP_BUILD` : `V48.0811.WAKE` → **`V49.0811.NODRIVE`**
+
+## 1) 구글 드라이브 연동 **전체 제거** [검증 완료]
+대표 지시로 걷어냈다. (연결은 성공했었지만 쓰지 않기로 했다.)
+
+지운 것 — ERP `public/index.html` 8곳:
+| 위치 | 내용 |
+|---|---|
+| 설정 화면 | 드라이브 안내문 · 발급 절차 6단계 · Client ID/API Key 입력칸 · 저장/해제 버튼 |
+| 모듈 전체 (127줄) | `GDRIVE_SCOPE` `gdriveToken` `gdriveLoading` `gdriveReady` `gdriveLoadScript` `gdriveLoadAll` `gdriveGetToken` `gdrivePick` `gdriveDownload` `gdriveImport` |
+| 현장사진 올리기 | `📁 구글 드라이브에서 가져오기` 버튼 · `pupDriveMsg` 안내 |
+| 이벤트 바인딩 | `pupDrive` · `gdSave` · `gdClear` 핸들러 |
+| 상태 저장 | 부팅 시 `store.get` 2줄 · 클라우드 payload 2필드 · `applyPayload` 2줄 |
+
+**남긴 것 (지시대로 그대로):** 현장사진 올리기 화면, EXIF 기반 현장 자동분류,
+사진 조회·다운로드, 업로드 대기열, Wake Lock, 카카오 지도 연동.
+사진 저장은 **기존 CMS Worker 경로만** 쓴다 — 외부 저장소 호출이 하나도 없다.
+
+**검증 [사실]:** `gdrive` `GDRIVE` `gdIdIn` `gdKeyIn` `gdSave` `gdClear` `pupDrive`
+`googleapis` `accounts.google.com` `google.accounts` `gapi` `PickerBuilder`
+— **전부 0건**. 구글 도메인 스크립트 참조가 파일에 하나도 남지 않았다.
+설정 화면에 드라이브 UI 없음 / 카카오 지도칸은 그대로 있음 확인.
+사진 10장 투입 → 현장 3곳 분리 → 초안 3건 생성 → **공개된 것 0건** 까지 실제로 돌려 확인했다.
+전체 화면 16개 + CMS 탭 7개 회귀 정상, 콘솔 JS 에러 0.
+
+⚠ 예전에 값을 저장했던 기기의 localStorage 에는 `gdriveClientId` / `gdriveApiKey` 가
+남아 있을 수 있다. **읽는 코드가 없으므로 아무 일도 하지 않는다.** 굳이 지우지 않았다.
+
+## 2) 브랜드 인트로 — v3 되돌림 [검증 완료]
+대표: **"영상이 좀 촌스러워졌어."** "화려하게" 쪽으로 민 것이 실패였다.
+
+**뺀 것 (다시 넣지 말 것):**
+- 점등 순간 화면 전체가 주황으로 번쩍이는 플래시 (`.hm-intro-flash`, `@keyframes hm-flash`)
+- 글자 위로 빛이 지나가는 스윕 (`.hm-intro-logo::after`, `@keyframes hm-sweep`)
+- 로고 아래 글로우 (`.hm-intro-logo::before`)
+- 3연속 깜빡임 → **'고장난 간판'** 으로 읽힌다
+
+**남긴 것:** 도면 꺾쇠·치수선(도면선과 같은 얇기·같은 색이라 장식이 아니라 도면의 일부로
+읽힌다)과, 전원이 들어올 때 **아주 짧게 한 번만** 주춤하는 점등(`hm-lit` 4단계).
+점등 타이밍은 v2 그대로(1.15 / 1.32 / 1.48s, 0.58s).
+
+**검증 [사실]:** `hm-flash` `hm-sweep` 키프레임과 `::after` `::before` 규칙 **CSSOM 에서 0건**.
+`hm-lit` `hm-lit-amber` 가 8단계 → **4단계**(0/38/48/100%)로 줄어든 것 확인.
+나머지 키프레임 8개 전부 유지. 총 길이 **데스크톱 4.15s / 모바일 2.988s 변화 없음**.
+
+⚠ **인트로가 실제로 움직이는 모습은 이번에도 못 봤다** (브라우저가 프레임을 안 그린다).
+타이밍·연결만 검증했다. 대표 눈으로 확인이 필요하다. 다시 보려면 주소 뒤에 `?intro=1`.
+
+---
+
 ## 발견한 것 (고치지 않음)
 홈페이지 실적 문구와 시공사례 페이지에 **"워시팡팡"** 으로 적혀 있다.
 사내 문서에서는 **"위시팡팡"** 으로 쓴다. 둘 중 어느 쪽이 맞는지 확인이 필요해

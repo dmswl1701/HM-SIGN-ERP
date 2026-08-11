@@ -863,7 +863,7 @@ function collectPayload(){
     workJobs:state.workJobs||[],
     projects:state.projects||{}, notice:state.notice||null, company:state.company||null,
     activity:state.activity||[],
-    notices:state.notices||[], downloads:state.downloads||[], events:state.events||[], homeBanner:state.homeBanner||null, routeDone:state.routeDone||{}, routeExtra:state.routeExtra||{}, navConf:state.navConf||null, mapKey:state.mapKey||'', gdriveClientId:state.gdriveClientId||'', gdriveApiKey:state.gdriveApiKey||'', geoCache:state.geoCache||{}, lastBackup:state.lastBackup||null, hideTips:!!state.hideTips,
+    notices:state.notices||[], downloads:state.downloads||[], events:state.events||[], homeBanner:state.homeBanner||null, routeDone:state.routeDone||{}, routeExtra:state.routeExtra||{}, navConf:state.navConf||null, mapKey:state.mapKey||'', geoCache:state.geoCache||{}, lastBackup:state.lastBackup||null, hideTips:!!state.hideTips,
     aiDocs:state.aiDocs||[], photoUse:state.photoUse||{}
   };
 }
@@ -882,8 +882,6 @@ async function applyPayload(d){
   if(d.homeBanner!==undefined){ state.homeBanner=d.homeBanner; await store.set('homeBanner', state.homeBanner); }
   if(d.navConf!==undefined){ state.navConf=d.navConf; await store.set('navConf', state.navConf); }
   if(d.mapKey!==undefined && d.mapKey){ state.mapKey=d.mapKey; await store.set('mapKey', state.mapKey); }
-  if(d.gdriveClientId){ state.gdriveClientId=d.gdriveClientId; await store.set('gdriveClientId', state.gdriveClientId); }
-  if(d.gdriveApiKey){ state.gdriveApiKey=d.gdriveApiKey; await store.set('gdriveApiKey', state.gdriveApiKey); }
   if(d.geoCache && typeof d.geoCache==='object'){ state.geoCache=Object.assign(state.geoCache||{}, d.geoCache); await store.set('geoCache', state.geoCache); }
   if(d.lastBackup){ if(!state.lastBackup || d.lastBackup>state.lastBackup){ state.lastBackup=d.lastBackup; await store.set('lastBackup', state.lastBackup); } }
   if(d.hideTips!==undefined){ state.hideTips=!!d.hideTips; await store.set('hideTips', state.hideTips); }
@@ -1096,7 +1094,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V48.0811.WAKE';
+const APP_BUILD = 'V49.0811.NODRIVE';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -1339,10 +1337,6 @@ async function loadData(){
   try{ state.navConf = await store.get('navConf'); }catch(e){ state.navConf = null; }
   try{ state.mapKey = await store.get('mapKey'); }catch(e){ state.mapKey = ''; }
   if(typeof state.mapKey!=='string') state.mapKey='';
-  try{ state.gdriveClientId = await store.get('gdriveClientId'); }catch(e){ state.gdriveClientId=''; }
-  if(typeof state.gdriveClientId!=='string') state.gdriveClientId='';
-  try{ state.gdriveApiKey = await store.get('gdriveApiKey'); }catch(e){ state.gdriveApiKey=''; }
-  if(typeof state.gdriveApiKey!=='string') state.gdriveApiKey='';
   try{ state.geoCache = await store.get('geoCache'); }catch(e){ state.geoCache = null; }
   if(!state.geoCache || typeof state.geoCache!=='object') state.geoCache={};
   try{ state.routeDone = await store.get('routeDone'); }catch(e){ state.routeDone = null; }
@@ -2931,45 +2925,6 @@ function renderSettings(){
           <input type="text" id="mapKeyIn" value="${esc(state.mapKey||'')}" placeholder="카카오 JavaScript 키" style="flex:1;min-width:180px;padding:10px;border:1px solid var(--border);border-radius:7px;font-size:13px">
           <button class="btn" id="mapKeySave">저장</button>
           ${kakaoKey()? '<button class="btn secondary" id="mapKeyClear" style="color:var(--red);border-color:#E7C4BC">해제</button>':''}
-        </div>
-      </div>
-      <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
-        <h2 style="font-size:15px;margin-bottom:6px">📁 구글 드라이브에서 사진 가져오기
-          <span style="font-size:11.5px;font-weight:400;color:var(--text-mute)">(선택 · 베타)</span></h2>
-        <p style="font-size:12.5px;color:var(--text-mute);line-height:1.75;margin-bottom:10px">
-          드라이브 폴더에 사진을 모아두면 <b>현장사진 올리기</b> 화면에서 한꺼번에 끌어옵니다.
-          원본을 그대로 받아오므로 <b>촬영시각·위치 정보가 살아 있어</b> 현장 자동 분리가 정확합니다.<br>
-          <b style="color:#8a5e14">⚠ 구글 <u>포토</u>는 안 됩니다.</b> 2025년에 외부 접근이 막혔습니다. <b>드라이브</b>에 넣어 주세요.<br>
-          ${gdriveReady()? '<b style="color:var(--green)">✔ 연결값 저장됨 — 현장사진 올리기 화면에 버튼이 나옵니다</b>'
-                         : '아직 연결하지 않았습니다. 아래 절차대로 값 2개를 발급받아 넣어 주세요.'}
-        </p>
-        <details style="margin-bottom:10px">
-          <summary style="font-size:12.5px;color:var(--navy);cursor:pointer;font-weight:700;list-style:revert">발급 방법 (구글 계정 필요 · 무료)</summary>
-          <ol style="font-size:12px;color:var(--text-mute);line-height:1.9;margin:9px 0 0;padding-left:20px">
-            <li><b>console.cloud.google.com</b> 접속 → 프로젝트 만들기 (이름은 아무거나, 예: HM SIGN)</li>
-            <li>왼쪽 <b>API 및 서비스 → 라이브러리</b> → <b>Google Drive API</b> 와 <b>Google Picker API</b> 를 각각 <b>사용</b></li>
-            <li><b>OAuth 동의 화면</b> → 외부 → 앱 이름·이메일만 채우고 저장 →
-              <b>테스트 사용자</b>에 본인 구글 계정 추가</li>
-            <li><b>사용자 인증 정보 → 사용자 인증 정보 만들기 → OAuth 클라이언트 ID</b> → 유형 <b>웹 애플리케이션</b><br>
-              <b>승인된 자바스크립트 원본</b>에 아래 주소를 그대로 넣습니다:<br>
-              <code style="word-break:break-all">${esc(CMS_ERP_ORIGIN)}</code><br>
-              만들면 나오는 <b>클라이언트 ID</b>를 복사 (…apps.googleusercontent.com)</li>
-            <li>같은 화면에서 <b>사용자 인증 정보 만들기 → API 키</b> → 만들어진 <b>API 키</b>를 복사</li>
-            <li>아래 두 칸에 넣고 저장</li>
-          </ol>
-        </details>
-        <div style="display:grid;gap:8px">
-          <input type="text" id="gdIdIn" value="${esc(state.gdriveClientId||'')}" placeholder="클라이언트 ID (…apps.googleusercontent.com)" style="padding:10px;border:1px solid var(--border);border-radius:7px;font-size:13px">
-          <input type="text" id="gdKeyIn" value="${esc(state.gdriveApiKey||'')}" placeholder="API 키" style="padding:10px;border:1px solid var(--border);border-radius:7px;font-size:13px">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn" id="gdSave">저장</button>
-            ${gdriveReady()? '<button class="btn secondary" id="gdClear" style="color:var(--red);border-color:#E7C4BC">해제</button>':''}
-          </div>
-        </div>
-        <div class="aic-dm-warn" style="margin-top:10px;font-size:11.5px;line-height:1.7">
-          <b>아직 실제로 검증하지 못한 기능입니다.</b> 구글 계정이 있어야 확인할 수 있어
-          연결 후 첫 시도에서 오류가 날 수 있습니다. 오류 문구를 알려주시면 맞춰 고치겠습니다.
-          이 기능이 실패해도 기존 사진 올리기에는 아무 영향이 없습니다.
         </div>
       </div>
       <label class="pjstage ${state.hideTips?'':'on'}" style="margin-top:12px"><input type="checkbox" id="tipsOn" ${state.hideTips?'':'checked'}><span class="nm">홈 화면 안내 문구 보기 (백업·회사정보 알림)</span></label>
@@ -7678,132 +7633,6 @@ async function cmsAutoCreateDrafts(){
   }
 }
 
-// ===== 구글 드라이브에서 사진 가져오기 (베타 · 미검증) =====
-/* 대표 요청: "구글 드라이브 하나 만들어서 일정 폴더에서만 사진 추출."
-   구글 선택창(Picker)으로 사진을 고르면 그 사진만 접근 권한을 받는다(scope: drive.file).
-   드라이브 전체를 읽는 권한을 요구하지 않는다 — 고른 것만 본다.
-
-   ★ 이 기능은 구글 계정이 있어야 확인할 수 있어 아직 실제로 검증하지 못했다.
-     그래서 아래 원칙을 지켰다:
-     - 스크립트는 버튼을 누른 순간에만 불러온다 (평소엔 아무것도 안 받는다)
-     - 전부 try/catch. 실패해도 기존 사진 올리기에는 영향이 없다
-     - 연결값이 없으면 버튼 자체가 화면에 나오지 않는다
-
-   원본 파일을 그대로 받아오므로 EXIF(촬영시각·GPS)가 살아 있다.
-   ⚠ 구글 '포토'는 2025년 API 제한으로 불가. '드라이브'여야 한다. */
-const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
-let gdriveToken=null;      // {value, exp}
-let gdriveLoading=null;
-
-function gdriveReady(){
-  return !!((state.gdriveClientId||'').trim() && (state.gdriveApiKey||'').trim());
-}
-function gdriveLoadScript(src){
-  return new Promise((res,rej)=>{
-    if([...document.scripts].some(s=>s.src===src)) return res(true);
-    const el=document.createElement('script');
-    el.src=src; el.async=true;
-    el.onload=()=>res(true);
-    el.onerror=()=>rej(new Error('구글 스크립트를 불러오지 못했습니다 (인터넷 연결 확인)'));
-    document.head.appendChild(el);
-  });
-}
-async function gdriveLoadAll(){
-  if(gdriveLoading) return gdriveLoading;
-  gdriveLoading=(async()=>{
-    await gdriveLoadScript('https://accounts.google.com/gsi/client');
-    await gdriveLoadScript('https://apis.google.com/js/api.js');
-    await new Promise((res,rej)=>{
-      try{ gapi.load('picker',{callback:()=>res(true), onerror:()=>rej(new Error('구글 선택창을 불러오지 못했습니다'))}); }
-      catch(e){ rej(e); }
-    });
-    return true;
-  })();
-  try{ return await gdriveLoading; }
-  catch(e){ gdriveLoading=null; throw e; }
-}
-function gdriveGetToken(){
-  if(gdriveToken && gdriveToken.exp>Date.now()+60000) return Promise.resolve(gdriveToken.value);
-  return new Promise((res,rej)=>{
-    try{
-      const client=google.accounts.oauth2.initTokenClient({
-        client_id:(state.gdriveClientId||'').trim(),
-        scope:GDRIVE_SCOPE,
-        callback:(r)=>{
-          if(r && r.access_token){
-            gdriveToken={value:r.access_token, exp:Date.now()+((r.expires_in||3000)*1000)};
-            res(r.access_token);
-          }else rej(new Error('구글 로그인이 취소됐거나 권한을 받지 못했습니다'));
-        },
-        error_callback:(e)=>rej(new Error('구글 로그인 오류: '+((e&&e.type)||'알 수 없음')))
-      });
-      client.requestAccessToken();
-    }catch(e){ rej(new Error('구글 로그인을 시작하지 못했습니다: '+e.message)); }
-  });
-}
-/* 선택창을 띄워 고른 사진들의 {id,name,mimeType} 목록을 돌려준다 */
-function gdrivePick(token){
-  return new Promise((res,rej)=>{
-    try{
-      const view=new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
-        .setIncludeFolders(true)          // 폴더를 열고 들어갈 수 있게
-        .setSelectFolderEnabled(false);   // 폴더 자체가 아니라 그 안의 사진을 고른다
-      const picker=new google.picker.PickerBuilder()
-        .addView(view)
-        .setOAuthToken(token)
-        .setDeveloperKey((state.gdriveApiKey||'').trim())
-        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-        .setTitle('사진이 들어 있는 폴더를 열고 전부 선택하세요')
-        .setCallback((d)=>{
-          if(!d) return;
-          if(d.action===google.picker.Action.PICKED) res((d.docs||[]).filter(x=>/^image\//.test(x.mimeType||'')));
-          else if(d.action===google.picker.Action.CANCEL) res([]);
-        })
-        .build();
-      picker.setVisible(true);
-    }catch(e){ rej(new Error('구글 선택창을 띄우지 못했습니다: '+e.message)); }
-  });
-}
-async function gdriveDownload(doc, token){
-  const r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(doc.id)+'?alt=media&supportsAllDrives=true',
-    {headers:{Authorization:'Bearer '+token}});
-  if(!r.ok){
-    let t=''; try{ t=(await r.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){}
-    throw new Error(r.status+(t?' '+t:''));
-  }
-  const blob=await r.blob();
-  const name=doc.name||('drive-'+doc.id+'.jpg');
-  return new File([blob], name, {type:blob.type||doc.mimeType||'image/jpeg'});
-}
-/* 버튼 하나로 끝나는 전체 흐름: 로그인 → 고르기 → 내려받기 → 기존 자동 분리로 넘김 */
-async function gdriveImport(){
-  if(!gdriveReady()){ toast('설정에서 구글 드라이브 연결값을 먼저 넣어 주세요','warn'); return; }
-  const btn=document.getElementById('pupDrive');
-  const say=(t)=>{ const el=document.getElementById('pupDriveMsg'); if(el) el.textContent=t; };
-  if(btn){ btn.disabled=true; btn.textContent='구글 여는 중…'; }
-  try{
-    await gdriveLoadAll();
-    const token=await gdriveGetToken();
-    if(btn) btn.textContent='사진 고르는 중…';
-    const docs=await gdrivePick(token);
-    if(!docs.length){ say('고른 사진이 없습니다.'); return; }
-    const files=[]; let failed=0;
-    for(let i=0;i<docs.length;i++){
-      say('드라이브에서 받는 중… '+(i+1)+' / '+docs.length);
-      try{ files.push(await gdriveDownload(docs[i], token)); }catch(e){ failed++; }
-    }
-    if(!files.length){ say('사진을 하나도 받지 못했습니다. 설정의 발급 절차를 다시 확인해 주세요.'); return; }
-    if(failed) toast(failed+'장은 받지 못해 건너뛰었어요','warn');
-    say('');
-    await cmsAutoScanFiles(files);      // 여기서부터는 기존 자동 분리와 완전히 같다
-  }catch(e){
-    say('');
-    toast('구글 드라이브 가져오기 실패: '+(e&&e.message?e.message:e),'warn');
-  }finally{
-    if(btn){ btn.disabled=false; btn.textContent='📁 구글 드라이브에서 가져오기'; }
-  }
-}
-
 function cmsDataUrlToFile(dataUrl,name){
   const m=/^data:([^;]+);base64,(.+)$/.exec(dataUrl||'');
   if(!m) return null;
@@ -8867,8 +8696,6 @@ function bindWebsiteAdmin(){
     cmsLayoutReset(el.dataset.p)));
 
   // 현장사진 올리기(휴대폰 화면) 전용 버튼
-  const pupDriveBtn=document.getElementById('pupDrive');
-  if(pupDriveBtn) pupDriveBtn.addEventListener('click',()=>gdriveImport());
   const pupLoginBtn=document.getElementById('pupLogin');
   if(pupLoginBtn) pupLoginBtn.addEventListener('click',()=>{ state.view='website'; render(); });
   const pupAdminBtn=document.getElementById('pupToAdmin');
@@ -9880,17 +9707,10 @@ function renderPhotoUpload(){
       <input type="file" id="cmsAutoInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
     </label>`;
 
-  // 구글 드라이브 연결값이 있을 때만 보여준다. 없으면 이 버튼은 아예 없다.
-  const drive = gdriveReady() ? `
-    <button type="button" class="aic-btn" id="pupDrive" style="width:100%;min-height:46px;font-size:14px;font-weight:700">📁 구글 드라이브에서 가져오기</button>
-    <div class="aic-sub" id="pupDriveMsg" style="margin-top:6px;font-size:12px;min-height:16px"></div>
-    <div class="aic-sub" style="font-size:11px;margin-bottom:12px">사진을 모아둔 폴더를 열고 전부 선택하세요. 고른 사진만 접근합니다. <b>베타 — 처음엔 오류가 날 수 있어요.</b></div>` : '';
-
   if(!A){
     return head+`<div class="panel">
       <div class="pup-step"><span>1 사진 고르기</span><span>2 나눈 결과 확인</span><span>3 올리기</span></div>
       ${picker}
-      ${drive}
       <div class="aic-sub" style="line-height:1.75;font-size:12.5px">
         폰으로 <b>직접 찍은 사진</b>이면 촬영시각·위치가 들어 있어 정확합니다.
         카카오톡으로 받은 사진은 그 정보가 지워져 시간만으로 추정합니다.<br>
@@ -11851,24 +11671,6 @@ function bindEvents(){
     state.mapKey=v; try{ await store.set('mapKey', v); }catch(e){} scheduleCloudPush();
     __kakaoLoading=null;
     toast(v? '지도 키를 저장했어요 · 거래처 지도를 열어보세요':'지도 키를 지웠어요','ok'); render();
-  });
-  const gdSave=document.getElementById('gdSave');
-  if(gdSave) gdSave.addEventListener('click', async ()=>{
-    const id=(document.getElementById('gdIdIn').value||'').trim();
-    const key=(document.getElementById('gdKeyIn').value||'').trim();
-    state.gdriveClientId=id; state.gdriveApiKey=key;
-    try{ await store.set('gdriveClientId', id); await store.set('gdriveApiKey', key); }catch(e){}
-    gdriveToken=null; gdriveLoading=null; scheduleCloudPush();
-    toast((id&&key)? '구글 드라이브 연결값을 저장했어요 · 현장사진 올리기에서 눌러보세요'
-                   : '두 칸을 모두 채워야 버튼이 나옵니다','ok');
-    render();
-  });
-  const gdClear=document.getElementById('gdClear');
-  if(gdClear) gdClear.addEventListener('click', async ()=>{
-    state.gdriveClientId=''; state.gdriveApiKey='';
-    try{ await store.set('gdriveClientId',''); await store.set('gdriveApiKey',''); }catch(e){}
-    gdriveToken=null; gdriveLoading=null; scheduleCloudPush();
-    toast('구글 드라이브 연결을 해제했어요','ok'); render();
   });
   const mkc=document.getElementById('mapKeyClear');
   if(mkc) mkc.addEventListener('click', async ()=>{
