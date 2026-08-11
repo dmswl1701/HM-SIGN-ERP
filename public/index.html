@@ -506,6 +506,14 @@
   .cms-project-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;}
   .cms-project-title{font-size:16px; font-weight:800; color:var(--navy); line-height:1.45;}
   .cms-project-meta{font-size:11px; color:var(--text-mute); margin-top:3px;}
+  .cms-upload-roles{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:9px;}
+  .cms-upload-role{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    min-height:58px; padding:8px 6px; border:1px solid var(--navy); border-radius:9px; background:#fff; cursor:pointer; transition:.15s;}
+  .cms-upload-role:hover{background:var(--navy);}
+  .cms-upload-role:hover b, .cms-upload-role:hover span{color:#fff;}
+  .cms-upload-role b{font-size:12.5px; color:var(--navy); font-weight:800;}
+  .cms-upload-role span{font-size:10.5px; color:#8a94a3;}
+  @media(max-width:640px){ .cms-upload-roles{grid-template-columns:1fr 1fr;} }
   .cms-upload-zone{border:2px dashed #C9D4E5; border-radius:12px; background:#F8FAFD; padding:22px 16px; text-align:center; cursor:pointer; transition:.16s ease; user-select:none;}
   .cms-upload-zone:hover,.cms-upload-zone.is-drag{border-color:var(--navy); background:#EEF4FB;}
   .cms-upload-zone b{display:block; color:var(--navy); font-size:14px; margin-bottom:4px;}
@@ -6947,7 +6955,7 @@ function cmsQueueStatusText(item){
   if(item.status==='failed') return item.error||'업로드 실패';
   return '업로드 대기';
 }
-function cmsQueueAdd(portfolioId, files){
+function cmsQueueAdd(portfolioId, files, wantRole){
   const q=cmsQueue(portfolioId);
   const input=[...files];
   // 대표사진이 아직 없으면 첫 번째 새 사진을 자동으로 대표로 지정한다.
@@ -6963,10 +6971,12 @@ function cmsQueueAdd(portfolioId, files){
     if(file.size>15*1024*1024){ skipped++; continue; }
     const dup=q.items.some(x=>x.file && x.file.name===file.name && x.file.size===file.size && x.file.lastModified===file.lastModified);
     if(dup){ skipped++; continue; }
-    const autoRole=hasCover?'gallery':'cover';
-    hasCover=true;
+    // 역할을 지정해 올리면 그대로 쓴다(100장을 올린 뒤 하나씩 누르지 않아도 되게).
+    // 지정이 없을 때만 예전처럼 첫 장을 대표로 잡는다.
+    let useRole = wantRole || (hasCover ? 'gallery' : 'cover');
+    if(useRole === 'cover'){ hasCover = true; }
     q.items.push({
-      id:'q_'+cmsUuid(), file, url:URL.createObjectURL(file), role:autoRole,
+      id:'q_'+cmsUuid(), file, url:URL.createObjectURL(file), role:useRole,
       status:'ready', error:'', result:null
     });
     added++;
@@ -7581,9 +7591,20 @@ function renderWebsiteAdmin(){
 
         <div class="aic-docs">
           <div class="aic-doc-head">📥 사진 추가</div>
+          <!-- 역할별로 묶어서 올린다. 100장을 올린 뒤 하나씩 분류하지 않아도 되게,
+               올릴 때 이미 '시공 전/후'가 정해진다. -->
+          <div class="cms-upload-roles">
+            ${[{r:'before',t:'시공 전 사진'},{r:'after',t:'시공 후 사진'},
+               {r:'progress',t:'과정 사진'},{r:'gallery',t:'현장 사진'}].map(x=>`
+              <label class="cms-upload-role" data-r="${x.r}">
+                <b>+ ${x.t}</b><span>여러 장 선택</span>
+                <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" data-role="${x.r}"
+                  accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+              </label>`).join('')}
+          </div>
           <label class="cms-upload-zone cmsUploadZone" data-id="${esc(p.id)}">
-            <b>사진을 끌어놓거나 클릭해서 여러 장 선택</b>
-            <span>선택 즉시 자동 업로드 · 첫 사진은 대표로 지정 · 업로드 후 사진을 눌러 대표 변경/삭제 가능 · JPG/PNG/WebP · 장당 15MB 이하</span>
+            <b>또는 여기에 끌어놓기 (자동 분류)</b>
+            <span>선택 즉시 자동 업로드 · 첫 사진은 대표로 지정 · 올린 뒤 사진 아래 버튼으로 분류 변경 · JPG/PNG/WebP · 장당 15MB 이하 · 한 번에 최대 120장</span>
             <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
           </label>
 
@@ -7905,7 +7926,7 @@ function bindWebsiteAdmin(){
     toast('현장을 가져왔어요. 제목 확인 후 사진을 한꺼번에 넣어 주세요','ok'); render();
   });
   document.querySelectorAll('.cmsAssetStage').forEach(el=>el.addEventListener('change',e=>{
-    cmsQueueAdd(el.dataset.id,[...e.target.files]); e.target.value='';
+    cmsQueueAdd(el.dataset.id,[...e.target.files], el.dataset.role||''); e.target.value='';
   }));
   document.querySelectorAll('.cmsUploadZone').forEach(zone=>{
     zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('is-drag');});
