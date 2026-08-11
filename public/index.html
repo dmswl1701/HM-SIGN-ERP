@@ -469,8 +469,18 @@
   .cms-asset-preview{display:block!important; width:100%!important; padding:0!important; border:0!important; background:#EEF1F6!important; cursor:zoom-in!important;}
   .cms-cover-badge{position:absolute;left:7px;top:7px;z-index:2;padding:4px 7px;border-radius:999px;background:rgba(17,43,77,.9);color:#fff;font-size:10px;font-weight:800;pointer-events:none;}
   /* 문구 편집 — "지금 나오는 문구"를 항상 함께 보여준다 */
-  .cms-copy-group{margin-bottom:20px;}
-  .cms-copy-gtitle{font-size:12.5px;font-weight:800;color:var(--navy);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .cms-copy-group{margin-bottom:12px;border:1px solid var(--border);border-radius:9px;background:#fbfcfe;}
+  /* 항목이 50개가 넘어 한 화면에 다 펼치면 찾기 어렵다 → 페이지별로 접어 둔다 */
+  .cms-copy-gtitle{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;
+    font-size:12.5px;font-weight:800;color:var(--navy);padding:11px 13px;user-select:none;}
+  .cms-copy-gtitle::-webkit-details-marker{display:none;}
+  .cms-copy-gtitle::before{content:'▸';font-size:11px;color:#8a94a3;transition:transform .15s;}
+  .cms-copy-group[open]>.cms-copy-gtitle::before{transform:rotate(90deg);}
+  .cms-copy-group[open]>.cms-copy-gtitle{border-bottom:1px solid var(--border);}
+  .cms-copy-gtitle:hover{background:#f4f6f9;}
+  .cms-copy-count{margin-left:auto;font-size:10.5px;font-weight:700;color:#8a94a3;}
+  .cms-copy-count b{color:#c98b3d;}
+  .cms-copy-body{padding:12px 13px 4px;}
   .cms-copy-item{padding:12px;margin-bottom:9px;border:1px solid var(--border);border-radius:9px;background:#fff;}
   .cms-copy-item.is-edited{border-color:#c98b3d;background:#fffdf8;}
   .cms-copy-head{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
@@ -1024,7 +1034,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V44.0811.AUTOSITE';
+const APP_BUILD = 'V45.0811.COPY53';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -8098,42 +8108,117 @@ function renderWebsiteAdmin(){
         </div>
       </div>`;
     };
-    const G=(title,items)=>`<div class="cms-copy-group"><div class="cms-copy-gtitle">${esc(title)}</div>${items.join('')}</div>`;
+    /* 편집 가능한 문구 전체 목록. [키, 화면에 보일 이름, 홈페이지 기본 문구, 입력칸 줄수]
+       ⚠ 키는 홈페이지 마크업의 data-cms="pages.*" 와 정확히 같아야 한다.
+          기본 문구도 홈페이지 HTML 과 맞춰서 고칠 것. */
+    const COPY_GROUPS=[
+      ['홈 — 첫 화면',[
+        ['home.heroMeta1','사진 아래 문구 1','프랜차이즈·다점포 매장 사인 시공 경험',1],
+        ['home.heroMeta2','사진 아래 문구 2','누적 1,000건 이상 시공 경험',1]
+      ]],
+      ['홈 — 약속 섹션',[
+        ['home.promiseTitle','제목','원하는 사인을,\n현장에 맞는 방식으로.'],
+        ['home.promiseBody','본문','지역과 규모에 관계없이 필요한 조건을 먼저 듣고, 제작 방식과 예산을 함께 검토해 가장 현실적인 방향을 제안합니다.',3]
+      ]],
+      ['홈 — 시공사례 섹션',[
+        ['home.worksTitle','제목','말보다 결과가 먼저\n보이도록.'],
+        ['home.worksBody','본문','최근 공개된 실제 시공사례를 먼저 보여드립니다. 사진을 누르면 한 현장의 전체 작업사진을 확인할 수 있습니다.',3]
+      ]],
+      ['홈 — 강점 3가지',[
+        ['home.strengthsTitle','섹션 제목','세 가지를 지키면\n간판은 오래 갑니다.'],
+        ['home.s1Title','강점 1 — 제목','전국 현장 대응',1],
+        ['home.s1Body','강점 1 — 설명','지역보다 현장 조건을 먼저 봅니다. 일정과 시공 여건을 확인해 대응 범위를 정합니다.',2],
+        ['home.s2Title','강점 2 — 제목','요청에 맞춘 제작',1],
+        ['home.s2Body','강점 2 — 설명','정해진 제품을 밀기보다 브랜드와 예산, 설치 환경에 맞춰 제작 방식을 선택합니다.',2],
+        ['home.s3Title','강점 3 — 제목','정확한 시공과 마감',1],
+        ['home.s3Body','강점 3 — 설명','보기 좋은 시안에서 끝나지 않도록 실제 설치와 마감까지 결과를 확인합니다.',2]
+      ]],
+      ['홈 — 신뢰 섹션 (맨 아래)',[
+        ['home.proofTitle','제목','가격만 낮추는 견적보다,\n결과까지 좋은 선택.'],
+        ['home.proofBody','본문','과한 사양은 덜고 필요한 부분에는 정확히 투자합니다. 현장 조건과 예산을 함께 보고, 제작부터 설치까지 한 흐름으로 관리합니다.',3],
+        ['home.nextBody','버튼 옆 안내 문구','프로젝트 성격에 맞는 사인 종류와 상담 절차를 확인해 보세요.',2],
+        ['home.proofFigureLabel','숫자 아래 설명','누적 시공 경험',1],
+        ['home.proofItem1','실적 1','워시팡팡 셀프빨래방 · 1호점부터 다수 매장',2],
+        ['home.proofItem2','실적 2','올인 베이커리 · 다수 매장',2]
+      ]],
+      ['회사소개 페이지',[
+        ['about.title','페이지 제목','간판을 만드는 일이 아니라,\n브랜드가 보이는 장면을 만듭니다.'],
+        ['about.heroBody','제목 아래 문구','설치 위치와 건물 조건을 먼저 읽고, 기획·제작·시공을 한 흐름으로 연결합니다.',2],
+        ['about.h2a','중간 제목 1','좋은 사인은 멀리서도 보이고,\n가까이서도 완성도가 남습니다.'],
+        ['about.body1','중간 제목 1 — 본문 첫 문단','HM SIGN은 예쁜 시안에서 멈추지 않습니다. 건물의 비례, 접근 방향, 야간 시인성, 설치 방식과 예산까지 함께 보고 실제 현장에서 가장 잘 작동하는 답을 찾습니다.',4],
+        ['about.body2','중간 제목 1 — 본문 둘째 문단','한 매장이든 여러 지점이든, 필요한 만큼 정확하게 제작하고 끝까지 설치 결과를 확인합니다.',3],
+        ['about.h2b','중간 제목 2','요청은 유연하게,\n기준은 정확하게.'],
+        ['about.h2bBody','중간 제목 2 — 본문','지역과 규모보다 현장 조건을 먼저 봅니다. 전국 시공 상담부터 맞춤 제작, 합리적인 견적, 설치와 마감까지 필요한 흐름을 한 팀에서 이어갑니다.',3],
+        ['about.cap1Title','기준 카드 1 — 제목','현장을 먼저 봅니다',1],
+        ['about.cap1Body','기준 카드 1 — 설명','위치·구조·동선·가시성을 확인해 디자인보다 먼저 기준을 잡습니다.',2],
+        ['about.cap2Title','기준 카드 2 — 제목','정해진 답을 밀지 않습니다',1],
+        ['about.cap2Body','기준 카드 2 — 설명','브랜드와 예산, 설치 환경에 맞는 재료와 제작 방식을 선택합니다.',2],
+        ['about.cap3Title','기준 카드 3 — 제목','제작에서 끝내지 않습니다',1],
+        ['about.cap3Body','기준 카드 3 — 설명','실제 설치와 마감, 점등 결과까지 확인해 화면과 현장의 차이를 줄입니다.',2],
+        ['about.cap4Title','기준 카드 4 — 제목','한 곳부터 여러 지점까지',1],
+        ['about.cap4Body','기준 카드 4 — 설명','단일 매장부터 프랜차이즈·다점포까지 일정과 품질 기준을 맞춰 대응합니다.',2],
+        ['about.h2c','맨 아래 제목','원하는 모습이 있다면,\n현장에 맞게 구현합니다.']
+      ]],
+      ['프로세스 페이지',[
+        ['process.title','페이지 제목','복잡한 시공일수록,\n과정은 더 명확하게.'],
+        ['process.heroBody','제목 아래 문구','상담부터 현장 확인, 제작, 설치까지 필요한 순서와 결정 지점을 한눈에 확인할 수 있게 진행합니다.',3],
+        ['process.h2a','중간 제목 1','한 번 맡기면,\n현장까지 이어지는 흐름.'],
+        ['process.introBody','중간 제목 1 — 본문','상담과 제작, 시공이 따로 움직이면 일정과 결과가 흔들립니다. HM SIGN은 처음 들은 요청이 현장에서 달라지지 않도록 한 흐름으로 관리합니다.',3],
+        ['process.h2b','중간 제목 2','빠르게만 하지 않고,\n틀리지 않게 진행합니다.'],
+        ['process.a1','약속 1','현장 조건과 일정이 바뀌면 바로 다시 맞춥니다.',2],
+        ['process.a2','약속 2','필요 이상의 사양보다 예산 안에서 결과가 좋은 방향을 찾습니다.',2],
+        ['process.a3','약속 3','설치 전후 사진과 현장 결과를 기준으로 마지막까지 확인합니다.',2],
+        ['process.ctaTitle','맨 아래 제목','현장 사진 한 장부터\n보내주셔도 됩니다.'],
+        ['process.ctaBody','맨 아래 문구','정확한 사양을 아직 몰라도 괜찮습니다. 필요한 조건부터 함께 정리해드립니다.',2]
+      ]],
+      ['사인 종류 페이지',[
+        ['services.title','페이지 제목','필요한 사인을,\n현장에 맞게.'],
+        ['services.heroBody','제목 아래 문구','종류를 먼저 정하기보다 위치·가시성·운영 환경을 보고 맞는 제작 방식을 제안합니다.',2]
+      ]],
+      ['시공사례 페이지',[
+        ['works.title','페이지 제목','완성된 현장을\n사진으로 보여드립니다.'],
+        ['works.heroBody','제목 아래 문구','HM SIGN이 직접 제작·시공한 프로젝트를 현장별로 모았습니다. 사진을 눌러 전체 작업을 확인하세요.',3]
+      ]],
+      ['문의 페이지',[
+        ['contact.title','페이지 제목','좋은 사인의 시작은\n좋은 대화입니다.'],
+        ['contact.heroBody','제목 아래 문구','설치 장소와 필요한 사인, 예상 일정을 알려주시면 다음 단계를 안내합니다.',2],
+        ['contact.formTitle','입력칸 위 제목','견적 및\n현장 상담'],
+        ['contact.formBody','입력칸 위 문구','프로젝트 범위가 정해지지 않아도 괜찮습니다. 현장 조건과 목적을 알려주시면 상담에 필요한 확인사항부터 안내합니다.',3]
+      ]]
+    ];
+    const edited=d=>String(cmsGet('pages.'+d[0])||'').trim().length>0;
+    const copyTotal=COPY_GROUPS.reduce((n,g)=>n+g[1].length,0);
+    const copyEdited=COPY_GROUPS.reduce((n,g)=>n+g[1].filter(edited).length,0);
+    /* 고친 게 있는 묶음은 처음부터 펼쳐 둔다 — "어디 고쳤더라" 를 찾아 헤매지 않도록.
+       한 번 열고 닫은 뒤에는 그 상태를 기억한다. 안 그러면 [원래대로] 를 누르는 순간
+       "수정됨" 이 사라지면서 보고 있던 묶음이 통째로 접혀 버린다. */
+    const G=(title,defs,i)=>{
+      const n=defs.filter(edited).length;
+      const remembered=(state.cmsCopyOpen||{})[i];
+      // 고친 게 있으면 무조건 펼친다. 고친 게 없을 때만 기억한 상태(없으면 첫 묶음)를 따른다.
+      const open = n>0 ? true : (remembered===undefined ? i===0 : remembered);
+      return `<details class="cms-copy-group cmsCopyGroup" data-gi="${i}"${open?' open':''}>
+        <summary class="cms-copy-gtitle">${esc(title)}
+          <span class="cms-copy-count">${defs.length}개${n?` · <b>수정 ${n}개</b>`:''}</span>
+        </summary>
+        <div class="cms-copy-body">${defs.map(d=>F(d[0],d[1],d[2],d[3])).join('')}</div>
+      </details>`;
+    };
     body = `
     <div class="panel">
-      <h2>홈페이지 문구</h2>
-      <div class="aic-sub" style="margin:-8px 0 14px">
+      <h2>홈페이지 문구 (${copyTotal}곳)</h2>
+      <div class="aic-sub" style="margin:-8px 0 14px;line-height:1.75">
         회색 상자가 <b>지금 홈페이지에 실제로 나오는 문구</b>입니다.
         아래 입력칸에 새로 쓰면 바뀌고, 비우면 원래대로 돌아갑니다.
-        Enter 로 줄을 나누면 홈페이지에서도 줄이 나뉩니다.
+        Enter 로 줄을 나누면 홈페이지에서도 줄이 나뉩니다.<br>
+        <b>제목 줄을 눌러 펼치고 접으세요.</b> 지금 ${copyTotal}곳 중 <b>${copyEdited}곳</b>을 고친 상태입니다.
       </div>
-      ${G('홈 — 섹션 제목',[
-        F('home.promiseTitle','약속 섹션','원하는 사인을,\n현장에 맞는 방식으로.'),
-        F('home.worksTitle','시공사례 섹션','말보다 결과가 먼저\n보이도록.'),
-        F('home.strengthsTitle','강점 섹션','세 가지를 지키면\n간판은 오래 갑니다.'),
-        F('home.proofTitle','신뢰 섹션','가격만 낮추는 견적보다,\n결과까지 좋은 선택.')
-      ])}
-      ${G('홈 — 강점 3가지',[
-        F('home.s1Title','강점 1','전국 현장 대응',1),
-        F('home.s2Title','강점 2','요청에 맞춘 제작',1),
-        F('home.s3Title','강점 3','정확한 시공과 마감',1)
-      ])}
-      ${G('회사소개 페이지',[
-        F('about.title','페이지 제목','간판을 만드는 일이 아니라,\n브랜드가 보이는 장면을 만듭니다.'),
-        F('about.h2a','중간 제목 1','좋은 사인은 멀리서도 보이고,\n가까이서도 완성도가 남습니다.'),
-        F('about.h2b','중간 제목 2','요청은 유연하게,\n기준은 정확하게.'),
-        F('about.h2c','중간 제목 3','원하는 모습이 있다면,\n현장에 맞게 구현합니다.')
-      ])}
-      ${G('프로세스 페이지',[
-        F('process.title','페이지 제목','복잡한 시공일수록,\n과정은 더 명확하게.'),
-        F('process.h2a','중간 제목 1','한 번 맡기면,\n현장까지 이어지는 흐름.'),
-        F('process.h2b','중간 제목 2','빠르게만 하지 않고,\n틀리지 않게 진행합니다.')
-      ])}
-      ${G('사인 종류 · 문의 페이지',[
-        F('services.title','사인 종류 — 페이지 제목','필요한 사인을,\n현장에 맞게.'),
-        F('contact.title','문의 — 페이지 제목','좋은 사인의 시작은\n좋은 대화입니다.')
-      ])}
-      <div class="aic-dm-ok" style="margin-top:16px">
+      ${COPY_GROUPS.map((g,i)=>G(g[0],g[1],i)).join('')}
+      <div class="aic-sub" style="margin-top:12px;font-size:11.5px;line-height:1.7">
+        첫 화면의 큰 제목·설명과 전화·주소는 <b>대표 배너·회사정보</b> 탭에서,
+        사인 종류 5가지와 진행 절차 단계는 <b>사인 종류·절차</b> 탭에서 고칩니다.
+      </div>
+      <div class="aic-dm-ok" style="margin-top:12px">
         고친 뒤 아래 <b>저장</b> 을 누르면 홈페이지에 바로 반영됩니다.
       </div>
     </div>`;
@@ -8288,6 +8373,11 @@ function bindWebsiteAdmin(){
 
   // 단순 필드 (blur 시 반영 — 입력 중 리렌더 방지)
   document.querySelectorAll('.cmsIn').forEach(el=> el.addEventListener('change', ()=>{ cmsSet(el.dataset.p, el.value); }));
+  // 문구 묶음 펼침/접힘 기억 (재렌더돼도 보던 자리를 잃지 않게)
+  document.querySelectorAll('.cmsCopyGroup').forEach(el=> el.addEventListener('toggle', ()=>{
+    state.cmsCopyOpen = state.cmsCopyOpen || {};
+    state.cmsCopyOpen[el.dataset.gi] = el.open;
+  }));
 
   // 서비스
   document.querySelectorAll('.cmsSvcName').forEach(el=> el.addEventListener('change', ()=>{ cmsData.services[+el.dataset.i].name = el.value; }));
@@ -8424,6 +8514,10 @@ function bindWebsiteAdmin(){
 
   // 문구 "원래대로" — 값을 비우면 홈페이지가 기본 문구를 쓴다
   document.querySelectorAll('.cmsCopyReset').forEach(el=>el.addEventListener('click',()=>{
+    // 되돌리면 "수정됨" 이 사라지면서 보고 있던 묶음이 접혀 버린다.
+    // 다시 그리기 직전에 지금 펼쳐져 있는 묶음을 기억해 자리를 지킨다.
+    state.cmsCopyOpen = state.cmsCopyOpen || {};
+    document.querySelectorAll('.cmsCopyGroup').forEach(g=>{ state.cmsCopyOpen[g.dataset.gi]=g.open; });
     cmsSet(el.dataset.k, '');
     render();
     toast('기본 문구로 되돌렸어요. 저장을 눌러야 반영됩니다','ok');
