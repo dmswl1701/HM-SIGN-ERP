@@ -1096,7 +1096,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V47.0811.LAYOUT';
+const APP_BUILD = 'V48.0811.WAKE';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -7163,7 +7163,11 @@ function cmsQueueMove(portfolioId,fromId,toId){
 function cmsQueueUpdateDom(portfolioId){
   const q=cmsQueue(portfolioId), st=cmsQueueStats(q), key=cmsQueueKey(portfolioId);
   const count=document.getElementById('cmsQCount_'+key);
-  if(count) count.textContent='전체 '+st.total+' · 완료 '+st.done+' · 실패 '+st.failed+(q.running?' · 업로드 중':'');
+  if(count){
+    const eta=q.running?cmsQueueEta(q):'';
+    count.textContent='전체 '+st.total+' · 완료 '+st.done+' · 실패 '+st.failed
+      +(q.running?(' · 업로드 중'+(eta?' · '+eta:'')):'');
+  }
   const bar=document.getElementById('cmsQBar_'+key);
   const progressed=st.done+st.failed;
   if(bar) bar.style.width=(st.total?Math.round(progressed/st.total*100):0)+'%';
@@ -7232,6 +7236,39 @@ async function cmsUploadAsset(portfolioId,file,role,sortOrder){
   throw new Error(r.status+(text?' '+text:''));
 }
 
+/* 폰에서 사진을 많이 올릴 때 화면이 꺼지면 브라우저가 멈춰 업로드가 끊긴다.
+   업로드가 도는 동안만 화면을 깨워 둔다. 지원하지 않는 기기에서는 조용히 넘어간다.
+   (사용자가 직접 화면을 끄는 것은 막지 못한다 — 그건 브라우저 권한 밖이다) */
+let cmsWakeLock=null;
+async function cmsWakeOn(){
+  try{
+    if(cmsWakeLock || !navigator.wakeLock) return;
+    cmsWakeLock=await navigator.wakeLock.request('screen');
+    cmsWakeLock.addEventListener('release',()=>{ cmsWakeLock=null; });
+  }catch(e){ cmsWakeLock=null; }
+}
+function cmsWakeOff(){
+  try{ if(cmsWakeLock) cmsWakeLock.release(); }catch(e){}
+  cmsWakeLock=null;
+}
+// 화면을 껐다 켜면 wake lock 이 풀린다. 아직 올리는 중이면 다시 잡는다.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && !cmsWakeLock
+     && Object.values(cmsUploadQueues||{}).some(q=>q&&q.running)) cmsWakeOn();
+});
+
+/* 남은 장수로 끝날 시각을 어림한다. 실제로 올린 속도를 그대로 쓴다. */
+function cmsQueueEta(q){
+  if(!q||!q.startedAt) return '';
+  const st=cmsQueueStats(q), done=st.done+st.failed;
+  if(done<2 || done>=st.total) return '';
+  const per=(Date.now()-q.startedAt)/done;
+  const left=Math.round(per*(st.total-done)/1000);
+  if(left<45) return '곧 끝나요';
+  if(left<90) return '1분쯤 남음';
+  return '약 '+Math.round(left/60)+'분 남음';
+}
+
 async function cmsStartUploadQueue(portfolioId,retryOnly){
   const q=cmsQueue(portfolioId); if(q.running) return;
   const p=(cmsPortfolios||[]).find(x=>x.id===portfolioId); if(!p) return;
@@ -7243,6 +7280,8 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
   if(!saved){ toast('프로젝트 저장에 실패해 사진 업로드를 시작하지 않았어요','warn'); render(); return; }
 
   q.running=true;
+  q.startedAt=Date.now();
+  cmsWakeOn();                    // 올리는 동안 화면이 꺼지지 않게
   targets.forEach(x=>{x.status='ready';x.error='';});
   state.cmsErr=null; state.cmsSaveTried=null;
   render();
@@ -7262,13 +7301,15 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
       cmsQueueUpdateDom(portfolioId);
     }
   };
-  await Promise.all([worker(),worker()]);
+  // 3줄로 올린다. 더 늘리면 폰에서 이미지 변환(canvas)이 몰려 오히려 느려진다.
+  await Promise.all([worker(),worker(),worker()]);
   q.running=false;
   await cmsRefreshAssets(portfolioId);
 
   // 업로드 도중 추가된 사진이 있으면 버튼 없이 다음 묶음도 자동 진행한다.
   const moreReady=q.items.some(x=>x.status==='ready');
   if(moreReady){ render(); setTimeout(()=>cmsStartUploadQueue(portfolioId,false),0); return; }
+  cmsWakeOff();
 
   const failed=q.items.filter(x=>x.status==='failed');
   const done=q.items.filter(x=>x.status==='done');
@@ -9802,7 +9843,9 @@ function renderPhotoUpload(){
       const pct=st.total?Math.round((st.done+st.failed)/st.total*100):(uploaded?100:0);
       return `<div class="pup-prog">
         <b>${esc((p&&p.title)||'현장')}</b>
-        <span id="cmsQCount_${key}">${st.total?('전체 '+st.total+' · 완료 '+st.done+' · 실패 '+st.failed):(uploaded+'장 올림 완료')}</span>
+        <span id="cmsQCount_${key}">${st.total
+          ?('전체 '+st.total+' · 완료 '+st.done+' · 실패 '+st.failed+(q.running?(' · 업로드 중'+(cmsQueueEta(q)?' · '+cmsQueueEta(q):'')):''))
+          :(uploaded+'장 올림 완료')}</span>
         <div class="cms-upload-progress"><i id="cmsQBar_${key}" style="width:${pct}%"></i></div>
       </div>`;
     }).join('');
@@ -9811,7 +9854,8 @@ function renderPhotoUpload(){
       <h2>${cmsAutoDone.uploading?'올리는 중…':(failed?'일부 실패했어요':'✅ 다 올렸어요')}</h2>
       <div class="aic-sub" style="margin:-8px 0 10px;line-height:1.7">
         ${cmsAutoDone.uploading
-          ? '이 화면을 <b>켜 둔 채로</b> 기다려 주세요. 화면을 닫으면 업로드가 멈춥니다.'
+          ? '올리는 동안 <b>화면이 저절로 꺼지지 않게</b> 잡아뒀습니다. 그대로 두시면 됩니다.<br>'
+            +'<span style="color:#8a5e14">다만 다른 앱으로 넘어가거나 직접 화면을 끄면 멈춥니다.</span>'
           : '<b>아직 홈페이지에는 안 보입니다.</b> 사진을 확인한 뒤 직접 공개해야 올라갑니다.'}
       </div>
       ${rows}
