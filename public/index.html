@@ -487,12 +487,17 @@
   .cms-copy-foot button:disabled{opacity:.45;cursor:default;}
   .cms-copy-foot span{font-size:11px;color:#98a2b1;}
   /* 사진 역할 지정 — 사진 아래 작은 버튼 4개. 손가락으로 눌러야 하므로 최소 30px. */
-  .cms-role-pick{display:grid; grid-template-columns:repeat(4,1fr); gap:3px; margin-top:5px;}
+  /* 4개를 한 줄에 넣으면 카드가 좁아 글자가 잘린다 → 2×2 로 배치 */
+  .cms-role-pick{display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px;}
   .cms-role-btn{
-    min-height:30px; padding:0 2px; border:1px solid var(--border); border-radius:6px;
-    background:#fff; color:#5b6470; font-size:10.5px; font-weight:700; line-height:1.1;
+    min-height:32px; padding:0 4px; border:1px solid var(--border); border-radius:6px;
+    background:#fff; color:#5b6470; font-size:11.5px; font-weight:700; line-height:1.1;
     cursor:pointer; white-space:nowrap; transition:.15s;
   }
+  /* 기본값 안내 — 관리자에 0건이어도 홈페이지엔 기본 내용이 나온다는 걸 알린다 */
+  .cms-default-note{padding:14px 16px; border:1px dashed #c7d2e0; border-radius:9px; background:#f7f9fc;}
+  .cms-default-note b{display:block; font-size:12.5px; color:var(--navy); margin-bottom:6px;}
+  .cms-default-note span{display:block; font-size:11.5px; color:#6b7686; line-height:1.65;}
   .cms-role-btn:hover:not(:disabled){border-color:var(--navy); color:var(--navy);}
   .cms-role-btn.is-on{background:var(--navy); border-color:var(--navy); color:#fff;}
   .cms-role-btn:disabled{opacity:.5; cursor:default;}
@@ -7343,6 +7348,19 @@ function cmsGet(path, dflt){
   for(const p of parts){ if(v==null) return dflt; v = v[p]; }
   return (v==null || v==='') ? (dflt===undefined?'':dflt) : v;
 }
+/* 관리자 화면 공통 — "지금 홈페이지에 실제로 나오는 문구"를 입력칸 위에 보여준다.
+   CMS 에 값이 있으면 그 값, 없으면 홈페이지 HTML 의 기본 문구(def)가 나온다.
+   입력칸이 비어 있으면 운영자는 "아무것도 없다"고 오해하는데, 실제로는 기본 문구가
+   나오고 있다. 그 간극을 없애기 위한 것. */
+function cmsNow(path, def){
+  const cur = cmsGet(path);
+  const on  = String(cur||'').trim().length > 0;
+  const shown = on ? cur : def;
+  if(!shown) return '';
+  return `<div class="cms-copy-now"><span>지금 홈페이지에 나오는 문구${on?'':' (기본)'}</span>`
+    + `<p>${esc(shown).replace(/\n/g,'<br>')}</p></div>`;
+}
+
 function cmsSet(path, val){
   const parts = path.split('.');
   let o = cmsData;
@@ -7459,9 +7477,9 @@ function renderWebsiteAdmin(){
       <div class="field"><label>상단 작은 문구</label>
         <input type="text" class="cmsIn" data-p="banner.eyebrow" value="${esc(cmsGet('banner.eyebrow'))}" placeholder="사인 기획 · 제작 · 현장 시공"></div>
       <div class="field"><label>큰 제목 (줄바꿈으로 구분 · 2번째 줄이 전구색으로 빛납니다)</label>
-        <textarea class="cmsIn" data-p="banner.title" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.title'))}</textarea></div>
+        ${cmsNow("banner.title","기획부터 제작·시공까지\n브랜드에 맞는 사인을\n설계합니다.")}<textarea class="cmsIn" data-p="banner.title" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.title'))}</textarea></div>
       <div class="field"><label>설명 문구</label>
-        <textarea class="cmsIn" data-p="banner.description" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.description'))}</textarea></div>
+        ${cmsNow("banner.description","매장과 건물, 현장 조건을 확인해 브랜드가 잘 보이도록 사인을 기획하고 제작·시공합니다.")}<textarea class="cmsIn" data-p="banner.description" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet('banner.description'))}</textarea></div>
       <div class="field"><label>Hero 이미지 주소 (비워두면 기본 사진 사용)</label>
         <input type="text" class="cmsIn" data-p="banner.heroImageUrl" value="${esc(cmsGet('banner.heroImageUrl'))}" placeholder="https://... (https 주소만 적용됩니다)"></div>
     </div>
@@ -7495,7 +7513,7 @@ function renderWebsiteAdmin(){
           <input type="text" class="cmsSvcName" data-i="${i}" value="${esc(s.name||'')}" placeholder="이름 (예: 채널레터)">
           <input type="text" class="cmsSvcText" data-i="${i}" value="${esc(s.text||'')}" placeholder="설명">
           <button type="button" class="aic-btn aic-btn-rej cmsSvcDel" data-i="${i}">삭제</button>
-        </div>`).join('') || '<div class="empty">등록된 항목이 없어요.</div>'}
+        </div>`).join('') || '<div class="cms-default-note"><b>지금 홈페이지에는 기본 5가지가 나오고 있어요</b><span>채널레터 · LED 사인 · 파사드 사인 · 지주/파이론 · 내부·안내 사인</span><span>여기에 항목을 추가하면 그것으로 바뀝니다. 비워두면 기본 5가지가 계속 나옵니다.</span></div>'}
       <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsSvcAdd">+ 항목 추가</button></div>
     </div>
 
@@ -7507,7 +7525,7 @@ function renderWebsiteAdmin(){
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
           <input type="text" class="cmsPrc" data-i="${i}" value="${esc(p||'')}" placeholder="단계 이름" style="flex:1">
           <button type="button" class="aic-btn aic-btn-rej cmsPrcDel" data-i="${i}">삭제</button>
-        </div>`).join('') || '<div class="empty">등록된 단계가 없어요.</div>'}
+        </div>`).join('') || '<div class="cms-default-note"><b>지금 홈페이지에는 기본 4단계가 나오고 있어요</b><span>상담·현장 확인 → 사인 방향·사양 확인 → 제작 진행 → 현장 시공·검수</span><span>여기에 단계를 추가하면 그것으로 바뀝니다. 비워두면 기본 4단계가 계속 나옵니다.</span></div>'}
       <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsPrcAdd">+ 단계 추가</button></div>
     </div>`;
   }
