@@ -566,6 +566,45 @@
   .cms-auto-bar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:13px;}
   .cms-auto-bar select{padding:7px 9px; border:1px solid var(--border); border-radius:7px; font-size:12.5px; font-family:inherit;}
   @media(max-width:640px){ .cms-auto-opts{grid-template-columns:1fr;} }
+  /* 현장사진 올리기 — 휴대폰으로 쓰는 화면. 손가락으로 눌러야 하므로 버튼을 크게 잡는다. */
+  .pup-pick{display:block; width:100%; padding:34px 18px; margin-bottom:14px; text-align:center;
+    border:2px dashed #C9D4E5; border-radius:16px; background:#F8FAFD; cursor:pointer; user-select:none;}
+  .pup-pick:active{background:#EEF4FB; border-color:var(--navy);}
+  .pup-pick b{display:block; font-size:19px; font-weight:800; color:var(--navy);}
+  .pup-pick span{display:block; margin-top:7px; font-size:13px; line-height:1.6; color:#7c8798;}
+  .pup-step{display:flex; gap:6px; flex-wrap:wrap; margin:-4px 0 14px;}
+  .pup-step span{font-size:11px; padding:6px 9px; border-radius:999px; background:#EEF2F8; color:var(--navy); font-weight:700;}
+  .pup-card{border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; margin-bottom:12px;}
+  .pup-card.is-off{opacity:.42;}
+  .pup-card h3{margin:0 0 3px; font-size:15px; color:var(--navy);}
+  .pup-when{font-size:12px; color:var(--text-mute); margin-bottom:10px;}
+  .pup-card input[type=text]{width:100%; padding:13px; font-size:16px; font-family:inherit;
+    border:1px solid var(--border); border-radius:9px;}   /* 16px 미만이면 iOS 가 화면을 확대한다 */
+  .pup-card label{display:block; font-size:12px; font-weight:700; color:#5b6470; margin:10px 0 5px;}
+  .pup-card select{width:100%; padding:12px; font-size:15px; font-family:inherit;
+    border:1px solid var(--border); border-radius:9px; background:#fff;}
+  .pup-thumbs{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-top:11px;
+    -webkit-overflow-scrolling:touch;}
+  .pup-thumbs img{width:74px; height:74px; flex:0 0 auto; object-fit:cover; border-radius:9px; border:1px solid var(--border);}
+  .pup-thumbs span{flex:0 0 auto; align-self:center; font-size:12px; color:var(--text-mute); padding:0 6px;}
+  .pup-cardbtns{display:flex; gap:7px; margin-top:11px;}
+  .pup-cardbtns button{flex:1; min-height:42px; font-size:13px; font-weight:700; border-radius:9px;
+    border:1px solid var(--border); background:#fff; color:#5b6470; cursor:pointer;}
+  .pup-cardbtns button.is-rej{color:#b4433a; border-color:#e7c4bc;}
+  .pup-bar{position:sticky; bottom:0; z-index:5; margin:0 -4px; padding:12px 4px 14px;
+    background:linear-gradient(180deg,rgba(255,255,255,0) 0%,#fff 22%);}
+  .pup-go{width:100%; min-height:56px; font-size:17px; font-weight:800; color:#fff;
+    background:var(--navy); border:0; border-radius:13px; cursor:pointer;}
+  .pup-go:disabled{opacity:.5;}
+  .pup-sub{display:flex; gap:8px; margin-top:9px; align-items:center; flex-wrap:wrap;}
+  .pup-sub button{min-height:40px; padding:0 14px; font-size:13px; font-weight:700; border-radius:9px;
+    border:1px solid var(--border); background:#fff; color:#5b6470; cursor:pointer;}
+  .pup-sub select{min-height:40px; padding:0 9px; font-size:13px; font-family:inherit;
+    border:1px solid var(--border); border-radius:9px; background:#fff;}
+  .pup-prog{padding:12px 0; border-bottom:1px solid var(--border);}
+  .pup-prog:last-child{border-bottom:0;}
+  .pup-prog b{display:block; font-size:14px; color:var(--navy); margin-bottom:4px;}
+  .pup-prog span{display:block; font-size:12px; color:var(--text-mute); margin-bottom:7px;}
   @media(max-width:760px){
     .cms-project{padding:12px;}
     .cms-project-head{flex-direction:column;}
@@ -1034,7 +1073,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V45.0811.COPY53';
+const APP_BUILD = 'V46.0811.PHOTOUP';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -1104,6 +1143,7 @@ const NAV = [
   {id:'aicompany', label:'AI 회사', icon:'🤖', ready:true},
   {id:'airesults', label:'AI 결과물', icon:'📂', ready:true},
   {id:'website', label:'홈페이지 관리', icon:'🌐', ready:true},
+  {id:'photoup', label:'현장사진 올리기', icon:'📸', ready:true},
   {id:'notices', label:'공지사항', icon:'📢', ready:true},
   {id:'quotes', label:'견적관리', icon:'📄', ready:true},
   {id:'clients', label:'거래처관리', icon:'🏢', ready:true},
@@ -1526,10 +1566,11 @@ function statusClass(s){
 
 const ROLE_MENUS = {
   '전체(관리자)': null,
-  '경영지원':   ['home','aicompany','airesults','website','notices','quotes','projects','clients','pay','sales','downloads','trash','settings'],
-  '디자이너':   ['home','notices','quotes','projects','clients','items','gallery','downloads','settings'],
-  '생산':       ['home','notices','projects','mfg','install','jobs','gallery','downloads','settings'],
-  '설치':       ['home','notices','projects','install','jobs','as','gallery','downloads','settings'],
+  '경영지원':   ['home','aicompany','airesults','website','photoup','notices','quotes','projects','clients','pay','sales','downloads','trash','settings'],
+  '디자이너':   ['home','notices','quotes','projects','clients','items','gallery','photoup','downloads','settings'],
+  // 현장에서 사진을 찍는 건 생산·설치라 '현장사진 올리기'는 이쪽에도 열어 둔다
+  '생산':       ['home','notices','projects','mfg','install','jobs','gallery','photoup','downloads','settings'],
+  '설치':       ['home','notices','projects','install','jobs','as','gallery','photoup','downloads','settings'],
   '읽기전용':   ['home','aicompany','notices','quotes','projects','clients','sales','gallery','downloads','settings'],
 };
 function visibleNav(){
@@ -7181,6 +7222,7 @@ async function cmsStartUploadQueue(portfolioId,retryOnly){
    - GPS 가 없으면 촬영시각 간격으로만 나눈다 (카톡으로 받은 사진은 EXIF 가 지워져 정확도가 낮다) */
 
 let cmsAutoState = null;   // {photos:[], groups:[], busy, read, total, gapMin} — 화면 상태라 저장하지 않는다
+let cmsAutoDone = null;    // {ids:[portfolioId], uploading} — 초안을 만든 뒤 올라가는 상황을 보여주기 위한 것
 const CMS_AUTO_SAME_SITE_M = 200;                 // 이 거리 안이면 같은 현장으로 본다
 const CMS_AUTO_GAP_CHOICES = [
   {v:60,   t:'1시간'}, {v:180, t:'3시간 (권장)'},
@@ -7503,12 +7545,22 @@ async function cmsAutoCreateDrafts(){
     }
   }
   cmsPortfolioDraftsSave();
-  cmsAutoClear(true);
+  // 미리보기 주소는 화면에서 사라진 뒤에 반납한다. 먼저 반납하면 아직 남아 있던
+  // <img> 가 깨진 요청을 내 콘솔이 지저분해진다. (업로드는 대기열이 만든 별도 주소를 쓴다)
+  const spent=(cmsAutoState&&cmsAutoState.photos)||[];
+  cmsAutoState=null;
+  cmsAutoDone={ids, uploading:true};
   render();
+  spent.forEach(p=>{ try{URL.revokeObjectURL(p.url);}catch(e){} });
   toast('현장 '+use.length+'개 초안을 만들었어요 · 사진 '+shots+'장을 순서대로 올립니다','ok');
   logActivity('시공사진 자동 분리: 현장 '+use.length+'개 초안 생성 (사진 '+shots+'장)','추가');
-  // 한 프로젝트씩 순서대로 올린다 (동시에 열면 브라우저·서버 모두 무리)
-  for(const pid of ids) await cmsStartUploadQueue(pid,false);
+  try{
+    // 한 프로젝트씩 순서대로 올린다 (동시에 열면 브라우저·서버 모두 무리)
+    for(const pid of ids) await cmsStartUploadQueue(pid,false);
+  }finally{
+    if(cmsAutoDone) cmsAutoDone.uploading=false;
+    render();
+  }
 }
 
 function cmsDataUrlToFile(dataUrl,name){
@@ -8450,6 +8502,14 @@ function bindWebsiteAdmin(){
     cmsPortfolioDraftsSave();
     toast('현장을 가져왔어요. 제목 확인 후 사진을 한꺼번에 넣어 주세요','ok'); render();
   });
+  // 현장사진 올리기(휴대폰 화면) 전용 버튼
+  const pupLoginBtn=document.getElementById('pupLogin');
+  if(pupLoginBtn) pupLoginBtn.addEventListener('click',()=>{ state.view='website'; render(); });
+  const pupAdminBtn=document.getElementById('pupToAdmin');
+  if(pupAdminBtn) pupAdminBtn.addEventListener('click',()=>{ cmsAutoDone=null; state.view='website'; state.cmsTab='portfolio'; render(); });
+  const pupMoreBtn=document.getElementById('pupMore');
+  if(pupMoreBtn) pupMoreBtn.addEventListener('click',()=>{ cmsAutoDone=null; render(); });
+
   // 사진 EXIF 자동 현장 분리
   const ai=document.getElementById('cmsAutoInput');
   if(ai) ai.addEventListener('change',e=>{ const f=[...e.target.files]; e.target.value=''; cmsAutoScanFiles(f); });
@@ -9373,6 +9433,141 @@ function ensureStateDefaults(){
   if(!S.workTab) S.workTab='작업';
   if(!S.workFilter) S.workFilter='전체';
 }
+// ===== 현장사진 올리기 (휴대폰 전용 화면) =====
+/* 현장에서 찍은 사진을 폰에서 바로 올리기 위한 화면.
+   기능은 홈페이지 관리 > 시공사례 탭의 자동 분리와 완전히 같은 것을 쓴다
+   (cmsAutoScanFiles / cmsAutoCreateDrafts …). 여기서는 폰 세로화면에 맞게
+   크게 다시 그리기만 한다. id·class 를 그대로 써서 기존 이벤트 핸들러가 붙는다. */
+function renderPhotoUpload(){
+  const head=`<div class="topbar"><h1>📸 현장사진 올리기</h1></div>`;
+
+  if(!cmsOriginOk()){
+    return head+`<div class="panel">
+      <div class="aic-dm-warn" style="line-height:1.8">
+        <b>이 주소에서는 사진을 올릴 수 없습니다.</b><br>
+        보안 설정상 <b>ERP 운영 주소</b>에서만 됩니다.<br>
+        지금 주소: <code>${esc(location.origin||location.protocol)}</code>
+      </div>
+      <div class="aic-dm-ok" style="margin-top:14px;line-height:1.8">
+        아래 주소로 접속해 주세요. 폰에서는 <b>홈 화면에 추가</b>해 두면 앱처럼 열립니다.<br>
+        <a href="${CMS_ERP_ORIGIN}/" target="_blank" rel="noopener"
+           style="display:inline-block;margin-top:8px;font-weight:700;color:var(--navy);word-break:break-all">${CMS_ERP_ORIGIN}/ ↗</a>
+      </div></div>`;
+  }
+  if(!cmsSession) cmsSession=cmsLoadSession();
+  if(!cmsSession){
+    return head+`<div class="panel">
+      <div class="empty" style="line-height:1.8">사진을 올리려면 먼저 로그인해야 합니다.<br>
+        한 번 로그인하면 이 폰에서는 계속 유지됩니다.</div>
+      <button type="button" class="pup-go" id="pupLogin" style="margin-top:12px">로그인하러 가기</button>
+    </div>`;
+  }
+  // 초안을 만들 때 기존 목록을 덮어쓰지 않도록 시공사례를 먼저 불러온다
+  if(cmsPortfolios===null && !state.pupLoading){
+    state.pupLoading=true;
+    cmsLoadPortfolios().catch(()=>{}).then(()=>{ state.pupLoading=false; render(); });
+  }
+
+  // 올리는 중 / 다 올린 뒤 상황판
+  if(cmsAutoDone){
+    const rows=cmsAutoDone.ids.map(pid=>{
+      const p=(cmsPortfolios||[]).find(x=>x.id===pid);
+      const q=cmsQueue(pid), st=cmsQueueStats(q), key=cmsQueueKey(pid);
+      const uploaded=(cmsAssets[pid]||[]).length;
+      const pct=st.total?Math.round((st.done+st.failed)/st.total*100):(uploaded?100:0);
+      return `<div class="pup-prog">
+        <b>${esc((p&&p.title)||'현장')}</b>
+        <span id="cmsQCount_${key}">${st.total?('전체 '+st.total+' · 완료 '+st.done+' · 실패 '+st.failed):(uploaded+'장 올림 완료')}</span>
+        <div class="cms-upload-progress"><i id="cmsQBar_${key}" style="width:${pct}%"></i></div>
+      </div>`;
+    }).join('');
+    const failed=cmsAutoDone.ids.some(pid=>cmsQueueStats(cmsQueue(pid)).failed>0);
+    return head+`<div class="panel">
+      <h2>${cmsAutoDone.uploading?'올리는 중…':(failed?'일부 실패했어요':'✅ 다 올렸어요')}</h2>
+      <div class="aic-sub" style="margin:-8px 0 10px;line-height:1.7">
+        ${cmsAutoDone.uploading
+          ? '이 화면을 <b>켜 둔 채로</b> 기다려 주세요. 화면을 닫으면 업로드가 멈춥니다.'
+          : '<b>아직 홈페이지에는 안 보입니다.</b> 사진을 확인한 뒤 직접 공개해야 올라갑니다.'}
+      </div>
+      ${rows}
+      ${cmsAutoDone.uploading?'':`
+        <button type="button" class="pup-go" id="pupToAdmin" style="margin-top:14px">확인하고 홈페이지에 공개하기 →</button>
+        <div class="pup-sub"><button type="button" id="pupMore">사진 더 올리기</button></div>`}
+    </div>`;
+  }
+
+  const A=cmsAutoState;
+  const groups=(A&&A.groups)||[];
+  const photos=(A&&A.photos)||[];
+  const noExif=photos.filter(p=>!p.exif).length;
+  const use=groups.filter(g=>!g.excluded && g.photos.length);
+
+  const picker=`
+    <!-- input 을 label 안에 두는 것으로 충분하다. for 까지 주면 브라우저에 따라
+         파일 선택창이 두 번 열린다. -->
+    <label class="pup-pick">
+      <b>＋ 사진 고르기</b>
+      <span>앨범에서 <b>여러 장 한꺼번에</b> 고르세요.<br>사진 속 촬영시각·위치를 읽어 현장별로 자동으로 나눕니다.</span>
+      <input type="file" id="cmsAutoInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+    </label>`;
+
+  if(!A){
+    return head+`<div class="panel">
+      <div class="pup-step"><span>1 사진 고르기</span><span>2 나눈 결과 확인</span><span>3 올리기</span></div>
+      ${picker}
+      <div class="aic-sub" style="line-height:1.75;font-size:12.5px">
+        폰으로 <b>직접 찍은 사진</b>이면 촬영시각·위치가 들어 있어 정확합니다.
+        카카오톡으로 받은 사진은 그 정보가 지워져 시간만으로 추정합니다.<br>
+        올려도 <b>홈페이지에 바로 공개되지 않습니다.</b> 확인 후 직접 공개를 눌러야 합니다.
+      </div></div>`;
+  }
+  if(A.busy && !groups.length){
+    return head+`<div class="panel">
+      <div class="empty" id="cmsAutoProg" style="font-size:15px">촬영정보 읽는 중… ${A.read} / ${A.total}</div>
+    </div>`;
+  }
+
+  return head+`<div class="panel">
+    <div class="pup-step"><span>1 사진 고르기</span><span><b>2 나눈 결과 확인</b></span><span>3 올리기</span></div>
+    <div class="aic-sub" style="margin:-4px 0 12px;line-height:1.7">
+      사진 <b>${photos.length}장</b>을 현장 <b>${groups.length}곳</b>으로 나눴어요. 제목만 확인해 주세요.
+    </div>
+    ${noExif?`<div class="cms-auto-warn">사진 ${noExif}장은 <b>촬영시각이 없어</b> 파일 저장시각으로 추정했어요.
+      묶음이 맞는지 특히 이 부분을 봐 주세요.</div>`:''}
+    ${groups.map((g,i)=>`
+      <div class="pup-card ${g.excluded?'is-off':''}">
+        <h3>현장 ${i+1}${g.excluded?' — 뺌':''}</h3>
+        <div class="pup-when">사진 ${g.photos.length}장 · ${esc(cmsAutoWhen(g))} · ${g.lat!=null?'위치 있음':'위치 없음'}</div>
+        <input type="text" class="cmsAutoF" data-id="${esc(g.id)}" data-f="title"
+          value="${esc(g.title||'')}" placeholder="예: ○○병원 외부 채널간판">
+        <label>사진 분류</label>
+        <select class="cmsAutoRole" data-id="${esc(g.id)}">
+          <option value="gallery" ${g.roleMode!=='timeline'?'selected':''}>전부 현장 사진</option>
+          <option value="timeline" ${g.roleMode==='timeline'?'selected':''}>시간순 시공 전·후 추정</option>
+        </select>
+        <div class="pup-thumbs">
+          ${g.photos.slice(0,12).map(p=>`<img src="${esc(p.url)}" alt="현장 사진">`).join('')}
+          ${g.photos.length>12?`<span>외 ${g.photos.length-12}장</span>`:''}
+        </div>
+        <div class="pup-cardbtns">
+          ${i>0?`<button type="button" class="cmsAutoMerge" data-id="${esc(g.id)}">▲ 위와 합치기</button>`:''}
+          <button type="button" class="cmsAutoSkip ${g.excluded?'':'is-rej'}" data-id="${esc(g.id)}">${g.excluded?'다시 넣기':'이 현장 빼기'}</button>
+        </div>
+      </div>`).join('')}
+    <div class="pup-bar">
+      <button type="button" class="pup-go" id="cmsAutoCreate" ${(!use.length||A.busy)?'disabled':''}>
+        ${A.busy?'만드는 중…':'현장 '+use.length+'개 올리기'}</button>
+      <div class="pup-sub">
+        <button type="button" id="cmsAutoReset" ${A.busy?'disabled':''}>다시 고르기</button>
+        <select id="cmsAutoGap" ${A.busy?'disabled':''}>
+          ${CMS_AUTO_GAP_CHOICES.map(c=>`<option value="${c.v}" ${A.gapMin===c.v?'selected':''}>${esc(c.t)}</option>`).join('')}
+        </select>
+        <span class="aic-sub" style="font-size:11.5px">묶는 기준 시간</span>
+      </div>
+    </div>
+  </div>`;
+}
+
 function render(){
   ensureStateDefaults();
   try{ renderNav(); }catch(e){ console.warn('nav', e&&e.message); }
@@ -9383,6 +9578,7 @@ function render(){
   else if(state.view==='aicompany') html = renderAICompany();
   else if(state.view==='airesults') html = renderAiResults();
   else if(state.view==='website') html = renderWebsiteAdmin();
+  else if(state.view==='photoup') html = renderPhotoUpload();
   else if(state.view==='clients') html = state.detailClientId? renderClientDetail() : renderClients();
   else if(state.view==='items') html = renderItems();
   else if(state.view==='pay') html = renderPay();
