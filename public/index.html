@@ -468,6 +468,24 @@
   .cms-asset:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(13,31,58,.10); border-color:#AFC0D5;}
   .cms-asset-preview{display:block!important; width:100%!important; padding:0!important; border:0!important; background:#EEF1F6!important; cursor:zoom-in!important;}
   .cms-cover-badge{position:absolute;left:7px;top:7px;z-index:2;padding:4px 7px;border-radius:999px;background:rgba(17,43,77,.9);color:#fff;font-size:10px;font-weight:800;pointer-events:none;}
+  /* 문구 편집 — "지금 나오는 문구"를 항상 함께 보여준다 */
+  .cms-copy-group{margin-bottom:20px;}
+  .cms-copy-gtitle{font-size:12.5px;font-weight:800;color:var(--navy);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .cms-copy-item{padding:12px;margin-bottom:9px;border:1px solid var(--border);border-radius:9px;background:#fff;}
+  .cms-copy-item.is-edited{border-color:#c98b3d;background:#fffdf8;}
+  .cms-copy-head{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+  .cms-copy-head b{font-size:12.5px;color:#33415a;}
+  .cms-copy-badge{padding:2px 7px;border-radius:999px;background:#c98b3d;color:#fff;font-size:9.5px;font-weight:800;}
+  .cms-copy-badge.is-default{background:#e8ecf1;color:#7c8798;}
+  .cms-copy-now{padding:8px 10px;margin-bottom:8px;border-radius:7px;background:#f4f6f9;}
+  .cms-copy-now span{display:block;font-size:10px;font-weight:700;color:#8a94a3;margin-bottom:3px;}
+  .cms-copy-now p{margin:0;font-size:13.5px;line-height:1.55;color:#1f2b3d;font-weight:600;}
+  .cms-copy-ta{width:100%;padding:10px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.65;resize:vertical;}
+  .cms-copy-foot{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .cms-copy-foot button{min-height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:11px;font-weight:700;color:#5b6470;cursor:pointer;}
+  .cms-copy-foot button:hover:not(:disabled){border-color:var(--navy);color:var(--navy);}
+  .cms-copy-foot button:disabled{opacity:.45;cursor:default;}
+  .cms-copy-foot span{font-size:11px;color:#98a2b1;}
   /* 사진 역할 지정 — 사진 아래 작은 버튼 4개. 손가락으로 눌러야 하므로 최소 30px. */
   .cms-role-pick{display:grid; grid-template-columns:repeat(4,1fr); gap:3px; margin-top:5px;}
   .cms-role-btn{
@@ -7580,49 +7598,69 @@ function renderWebsiteAdmin(){
   }
 
   if(tab==='copy'){
-    /* 홈페이지 문구 편집 — 값이 비어 있으면 홈페이지는 원래 문구를 그대로 쓴다.
-       그래서 "지우면 원래대로" 가 된다. 줄바꿈은 Enter 로 넣으면 그대로 반영된다. */
-    const TA=(path,label,ph,rows)=>`
-      <div class="field"><label>${esc(label)}</label>
-        <textarea class="cmsIn" data-p="${path}" rows="${rows||2}" placeholder="${esc(ph)}"
-          style="width:100%;padding:11px;border:1px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;line-height:1.7;resize:vertical">${esc(cmsGet(path))}</textarea>
-        <div class="aic-sub" style="margin-top:4px;font-size:11px">비워두면 원래 문구가 그대로 나옵니다</div></div>`;
+    /* 홈페이지 문구 편집.
+       운영자가 헷갈리지 않도록 "지금 홈페이지에 나오는 문구"를 항상 함께 보여준다.
+       def = 홈페이지 HTML 에 적힌 기본 문구. CMS 값이 없으면 이게 그대로 나온다.
+       ⚠ 홈페이지 마크업의 data-cms="pages.*" 문구를 고치면 여기 def 도 맞춰 고칠 것. */
+    const F=(key,label,def,rows)=>{
+      const cur=cmsGet('pages.'+key);
+      const on=String(cur||'').trim().length>0;
+      const shown=(on?cur:def);
+      return `
+      <div class="cms-copy-item${on?' is-edited':''}">
+        <div class="cms-copy-head">
+          <b>${esc(label)}</b>
+          ${on?'<span class="cms-copy-badge">수정됨</span>':'<span class="cms-copy-badge is-default">기본</span>'}
+        </div>
+        <div class="cms-copy-now">
+          <span>지금 홈페이지에 나오는 문구</span>
+          <p>${esc(shown).replace(/\n/g,'<br>')}</p>
+        </div>
+        <textarea class="cmsIn cms-copy-ta" data-p="pages.${key}" rows="${rows||2}"
+          placeholder="${esc(def)}">${esc(cur)}</textarea>
+        <div class="cms-copy-foot">
+          <button type="button" class="cmsCopyReset" data-k="pages.${key}"${on?'':' disabled'}>원래대로</button>
+          <span>비우고 저장하면 기본 문구로 돌아갑니다</span>
+        </div>
+      </div>`;
+    };
+    const G=(title,items)=>`<div class="cms-copy-group"><div class="cms-copy-gtitle">${esc(title)}</div>${items.join('')}</div>`;
     body = `
     <div class="panel">
       <h2>홈페이지 문구</h2>
       <div class="aic-sub" style="margin:-8px 0 14px">
-        홈 화면에 보이는 문장을 직접 고칠 수 있어요. Enter 로 줄을 나누면 홈페이지에서도 줄이 나뉩니다.
+        회색 상자가 <b>지금 홈페이지에 실제로 나오는 문구</b>입니다.
+        아래 입력칸에 새로 쓰면 바뀌고, 비우면 원래대로 돌아갑니다.
+        Enter 로 줄을 나누면 홈페이지에서도 줄이 나뉩니다.
       </div>
-
-      <div class="aic-doc-head" style="margin-top:4px">홈 · 섹션 제목</div>
-      ${TA('pages.home.promiseTitle','약속 섹션 제목','원하는 사인을,\n현장에 맞는 방식으로.')}
-      ${TA('pages.home.worksTitle','시공사례 섹션 제목','말보다 결과가 먼저\n보이도록.')}
-      ${TA('pages.home.strengthsTitle','강점 섹션 제목','세 가지를 지키면\n간판은 오래 갑니다.')}
-      ${TA('pages.home.proofTitle','신뢰 섹션 제목','가격만 낮추는 견적보다,\n결과까지 좋은 선택.')}
-
-      <div class="aic-doc-head" style="margin-top:18px">홈 · 강점 3가지</div>
-      ${TA('pages.home.s1Title','강점 1 제목','전국 현장 대응',1)}
-      ${TA('pages.home.s2Title','강점 2 제목','요청에 맞춘 제작',1)}
-      ${TA('pages.home.s3Title','강점 3 제목','정확한 시공과 마감',1)}
-
-      <div class="aic-doc-head" style="margin-top:18px">회사소개 페이지</div>
-      ${TA('pages.about.title','페이지 제목','간판을 만드는 일이 아니라,\n브랜드를 세우는 일입니다.')}
-      ${TA('pages.about.h2a','중간 제목 1','')}
-      ${TA('pages.about.h2b','중간 제목 2','')}
-      ${TA('pages.about.h2c','중간 제목 3','')}
-
-      <div class="aic-doc-head" style="margin-top:18px">프로세스 페이지</div>
-      ${TA('pages.process.title','페이지 제목','복잡한 시공일수록,\n과정은 단순하게.')}
-      ${TA('pages.process.h2a','중간 제목 1','')}
-      ${TA('pages.process.h2b','중간 제목 2','')}
-
-      <div class="aic-doc-head" style="margin-top:18px">사인 종류 · 문의 페이지</div>
-      ${TA('pages.services.title','사인 종류 — 페이지 제목','필요한 사인을,\n현장에 맞게.')}
-      ${TA('pages.contact.title','문의 — 페이지 제목','좋은 사인의 시작은\n좋은 대화입니다.')}
-
+      ${G('홈 — 섹션 제목',[
+        F('home.promiseTitle','약속 섹션','원하는 사인을,\n현장에 맞는 방식으로.'),
+        F('home.worksTitle','시공사례 섹션','말보다 결과가 먼저\n보이도록.'),
+        F('home.strengthsTitle','강점 섹션','세 가지를 지키면\n간판은 오래 갑니다.'),
+        F('home.proofTitle','신뢰 섹션','가격만 낮추는 견적보다,\n결과까지 좋은 선택.')
+      ])}
+      ${G('홈 — 강점 3가지',[
+        F('home.s1Title','강점 1','전국 현장 대응',1),
+        F('home.s2Title','강점 2','요청에 맞춘 제작',1),
+        F('home.s3Title','강점 3','정확한 시공과 마감',1)
+      ])}
+      ${G('회사소개 페이지',[
+        F('about.title','페이지 제목','간판을 만드는 일이 아니라,\n브랜드가 보이는 장면을 만듭니다.'),
+        F('about.h2a','중간 제목 1','좋은 사인은 멀리서도 보이고,\n가까이서도 완성도가 남습니다.'),
+        F('about.h2b','중간 제목 2','요청은 유연하게,\n기준은 정확하게.'),
+        F('about.h2c','중간 제목 3','원하는 모습이 있다면,\n현장에 맞게 구현합니다.')
+      ])}
+      ${G('프로세스 페이지',[
+        F('process.title','페이지 제목','복잡한 시공일수록,\n과정은 더 명확하게.'),
+        F('process.h2a','중간 제목 1','한 번 맡기면,\n현장까지 이어지는 흐름.'),
+        F('process.h2b','중간 제목 2','빠르게만 하지 않고,\n틀리지 않게 진행합니다.')
+      ])}
+      ${G('사인 종류 · 문의 페이지',[
+        F('services.title','사인 종류 — 페이지 제목','필요한 사인을,\n현장에 맞게.'),
+        F('contact.title','문의 — 페이지 제목','좋은 사인의 시작은\n좋은 대화입니다.')
+      ])}
       <div class="aic-dm-ok" style="margin-top:16px">
         고친 뒤 아래 <b>저장</b> 을 누르면 홈페이지에 바로 반영됩니다.
-        칸을 비우면 원래 문구로 돌아갑니다.
       </div>
     </div>`;
   }
@@ -7872,6 +7910,13 @@ function bindWebsiteAdmin(){
 
   document.querySelectorAll('.cmsAssetPreview').forEach(el=>el.addEventListener('click',()=>
     cmsShowAssetPreview(el.dataset.pid,el.dataset.aid)));
+
+  // 문구 "원래대로" — 값을 비우면 홈페이지가 기본 문구를 쓴다
+  document.querySelectorAll('.cmsCopyReset').forEach(el=>el.addEventListener('click',()=>{
+    cmsSet(el.dataset.k, '');
+    render();
+    toast('기본 문구로 되돌렸어요. 저장을 눌러야 반영됩니다','ok');
+  }));
 
   // 사진 역할 지정 (시공 전 / 시공 후 / 대표 / 현장)
   document.querySelectorAll('.cmsAssetRoleBtn').forEach(el=>el.addEventListener('click',async()=>{
