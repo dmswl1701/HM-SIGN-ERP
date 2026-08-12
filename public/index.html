@@ -1094,7 +1094,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V49.0811.NODRIVE';
+const APP_BUILD = 'V50.0811.EASYEDIT';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6719,13 +6719,49 @@ function cmsAsArray(value){
 }
 
 /* 서버에 돌려보낼 본문을 원본 행과 같은 모양으로 만든다 */
+/* 저장 실패를 "통신오류" 로만 보여주면 무엇을 해야 할지 알 수 없다.
+   무엇이 안 됐고 어디를 고쳐야 하는지 화면에서 바로 알려 준다. */
+const CMS_KEY_LABEL = {
+  pages:'문구 편집 · 화면 구성', banner:'대표 배너', company:'회사정보',
+  services:'사인 종류', process:'진행 절차', seo:'SEO', contact:'문의',
+  hero:'대표 배너 사진', about:'회사소개', home:'홈', footer:'하단'
+};
+function cmsSaveHint(key){
+  const label = CMS_KEY_LABEL[key] ? (CMS_KEY_LABEL[key]+'('+key+')') : key;
+  const first = !(cmsRows && cmsRows[key]);
+  return label + ' → 서버에 닿지 못했습니다.'
+    + (first
+        ? ' 이 항목은 아직 서버에 한 번도 저장된 적이 없습니다. 다시 한 번 저장을 눌러 보세요.'
+        : ' 인터넷 연결을 확인한 뒤 다시 저장해 주세요.')
+    + ' 계속 같으면 이 화면을 캡처해서 알려주세요.';
+}
+
+/* 이미 받아 본 다른 행에서 "값이 담기는 칸" 이름을 알아낸다.
+   이 Worker 는 website_site_content.payload 를 쓰지만, 행을 한 번도 받아 본 적 없는
+   새 키(pages)를 저장할 때 이름을 몰라 엉뚱한 모양으로 보내는 것이 문제였다. */
+function cmsRowField(){
+  for(const k of Object.keys(cmsRows||{})){
+    const row=cmsRows[k];
+    if(row && typeof row==='object' && !Array.isArray(row)){
+      for(const f of ['payload','content','value','data','body']){
+        if(row[f]!==undefined) return f;
+      }
+    }
+  }
+  return 'payload';
+}
 function cmsWrapValue(row, value){
   if(row && typeof row==='object' && !Array.isArray(row)){
     for(const f of ['content','value','data','payload','body']){
       if(row[f] !== undefined) { const o={}; o[f]=value; o.status='published'; return o; }
     }
   }
-  return Object.assign({}, value, {status:'published'});
+  /* 서버에 아직 행이 없는 키(= 처음 저장하는 pages)는 여기로 온다.
+     예전에는 값을 통째로 펼쳐서 {home:{...},about:{...},status:'published'} 로 보냈다.
+     Worker 가 기대하는 모양이 아니라 처리 중 오류가 났고, 그 오류 응답에는 CORS 헤더가
+     붙지 않아 브라우저가 아예 차단했다 → 400 이 아니라 "통신오류" 로 보였다.
+     이미 성공하고 있는 다른 키와 똑같은 모양으로 맞춰 보낸다. */
+  const o={}; o[cmsRowField()]=value; o.status='published'; return o;
 }
 
 async function cmsLoadAll(){
@@ -6833,7 +6869,13 @@ async function cmsSaveSite(){
       const body = JSON.stringify(cmsWrapValue(cmsRows[key], cmsData[key]));
       let r;
       try{ r = await cmsFetchRaw(CMS_BASE+'/content/'+key, {method:'PUT', body}); }
-      catch(e){ failList.push(key+' → 통신오류'); continue; }
+      catch(e){
+        /* fetch 자체가 튕겼다 = 요청이 서버에 닿지도 못했다.
+           다른 키는 되는데 이 키만 이러면 십중팔구 Worker 가 그 키를 모르는 것이다
+           (허용 목록에 없으면 브라우저 사전확인 단계에서 막혀 400 이 아니라 통신오류가 난다). */
+        failList.push(cmsSaveHint(key));
+        continue;
+      }
       if(r.status>=200 && r.status<300){
         okList.push(key);
         try{ cmsRows[key] = await r.json(); }catch(e){}
@@ -7866,6 +7908,41 @@ function cmsNow(path, def){
     + `<p>${esc(shown).replace(/\n/g,'<br>')}</p></div>`;
 }
 
+/* ===== 사인 종류 · 진행 절차 기본값 =====
+   홈페이지 HTML 에 적혀 있는 것과 같은 내용이다. 목록이 비어 있으면 홈페이지는 이 기본값을
+   보여주는데, 그걸 고치려면 다섯 개를 처음부터 타이핑해야 해서 "추가만 되고 수정이 안 된다"고
+   느껴졌다. 그래서 한 번에 불러와 바로 고칠 수 있게 한다.
+   ⚠ 홈페이지 services.html / process.html 문구를 바꾸면 여기도 같이 고칠 것. */
+const CMS_DEFAULT_SERVICES=[
+  {name:'채널레터',      text:'브랜드명을 선명하게 보여주는 입체 문자 사인'},
+  {name:'LED 사인',      text:'야간 인지와 시인성을 고려한 조명 사인'},
+  {name:'파사드 사인',    text:'건물 전면과 진입 동선을 고려한 외부 사인'},
+  {name:'지주·파이론',    text:'주차·진입·위치 안내를 위한 구조물 사인'},
+  {name:'내부·안내 사인', text:'매장 안의 동선과 정보를 정리하는 실내 사인'}
+];
+const CMS_DEFAULT_PROCESS=[
+  {name:'상담·현장 확인',   text:'원하는 분위기, 일정, 예산을 듣고 설치 위치와 건물 조건을 확인합니다.'},
+  {name:'방향·사양 확정',   text:'사인 종류와 크기, 재료, 조명 방식, 설치 방법을 현장에 맞게 정리합니다.'},
+  {name:'제작 진행',        text:'확정된 사양을 기준으로 제작하고, 설치 전에 필요한 준비 사항을 다시 점검합니다.'},
+  {name:'현장 시공·검수',   text:'현장에 정확히 설치하고 마감과 점등, 최종 인상을 확인한 뒤 마무리합니다.'}
+];
+/* 절차는 예전에 문자열만 저장하던 시절이 있었다. 그때 저장된 값도 그대로 읽히게 맞춰 준다.
+   ⚠ 문자열로 저장하면 홈페이지에서 단계 설명이 통째로 사라진다 — 항상 {name,text} 로 둔다. */
+function cmsStepNormalize(p){
+  if(p && typeof p==='object') return {name:p.name||p.title||'', text:p.text||p.desc||''};
+  return {name:String(p||''), text:''};
+}
+function cmsStepList(){
+  return cmsAsArray(cmsData.process).map(cmsStepNormalize);
+}
+/* 목록에서 항목 하나를 위/아래로 옮긴다 */
+function cmsMoveIn(arr,i,dir){
+  const j=i+dir;
+  if(!Array.isArray(arr) || i<0 || j<0 || j>=arr.length) return;
+  arr.splice(j,0,arr.splice(i,1)[0]);
+  render();
+}
+
 /* ===== 화면 구성 (섹션 켜기/끄기·순서) =====
    `pages.layout.<페이지>` 배열 하나로 처리한다. Supabase 스키마 변경 없음.
    ⚠ key 는 홈페이지 마크업의 data-section="..." 과 반드시 같아야 한다.
@@ -8069,31 +8146,53 @@ function renderWebsiteAdmin(){
 
   if(tab==='services'){
     const list = cmsAsArray(cmsData.services);
-    const processList = cmsAsArray(cmsData.process);
+    const processList = cmsStepList();   // 문자열로 저장된 옛 값도 {name,text} 로 읽어 준다
     body = `
     <div class="panel">
       <h2>사인 종류 (${list.length})</h2>
-      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "사인 종류" 페이지에 순서대로 표시됩니다.</div>
+      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "사인 종류" 페이지에 순서대로 표시됩니다. 칸을 고치면 그대로 바뀝니다.</div>
       ${list.map((s,i)=>`
         <div class="cms-row">
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
           <input type="text" class="cmsSvcName" data-i="${i}" value="${esc(s.name||'')}" placeholder="이름 (예: 채널레터)">
           <input type="text" class="cmsSvcText" data-i="${i}" value="${esc(s.text||'')}" placeholder="설명">
+          <button type="button" class="aic-btn cmsSvcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
+          <button type="button" class="aic-btn cmsSvcDown" data-i="${i}" ${i===list.length-1?'disabled':''} title="아래로">▼</button>
           <button type="button" class="aic-btn aic-btn-rej cmsSvcDel" data-i="${i}">삭제</button>
-        </div>`).join('') || '<div class="cms-default-note"><b>지금 홈페이지에는 기본 5가지가 나오고 있어요</b><span>채널레터 · LED 사인 · 파사드 사인 · 지주/파이론 · 내부·안내 사인</span><span>여기에 항목을 추가하면 그것으로 바뀝니다. 비워두면 기본 5가지가 계속 나옵니다.</span></div>'}
-      <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsSvcAdd">+ 항목 추가</button></div>
+        </div>`).join('') || `<div class="cms-default-note">
+          <b>지금 홈페이지에는 기본 5가지가 나오고 있어요</b>
+          <span>채널레터 · LED 사인 · 파사드 사인 · 지주·파이론 · 내부·안내 사인</span>
+          <span><b>고치고 싶으면 아래 "기본 5가지 불러오기"</b>를 누르세요. 그대로 목록에 들어와서 이름·설명을 바꾸거나 지울 수 있습니다.</span>
+        </div>`}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="aic-btn" id="cmsSvcAdd">+ 항목 추가</button>
+        ${list.length?'':'<button type="button" class="aic-btn aic-btn-primary" id="cmsSvcLoad">기본 5가지 불러오기</button>'}
+        ${list.length?'<button type="button" class="aic-btn" id="cmsSvcReset">전부 지우고 기본으로</button>':''}
+      </div>
     </div>
 
     <div class="panel">
       <h2>진행 절차 (${processList.length})</h2>
-      <div class="aic-sub" style="margin:-8px 0 14px">홈페이지 "프로세스" 페이지에 단계별로 표시됩니다.</div>
+      <div class="aic-sub" style="margin:-8px 0 14px;line-height:1.7">홈페이지 "프로세스" 페이지에 단계별로 표시됩니다.<br>
+        <b>설명까지 채워 주세요.</b> 단계 이름만 넣으면 홈페이지에서 설명 줄이 사라집니다.</div>
       ${processList.map((p,i)=>`
         <div class="cms-row">
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
-          <input type="text" class="cmsPrc" data-i="${i}" value="${esc(p||'')}" placeholder="단계 이름" style="flex:1">
+          <input type="text" class="cmsPrcName" data-i="${i}" value="${esc(p.name||'')}" placeholder="단계 이름 (예: 상담·현장 확인)">
+          <input type="text" class="cmsPrcText" data-i="${i}" value="${esc(p.text||'')}" placeholder="설명">
+          <button type="button" class="aic-btn cmsPrcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
+          <button type="button" class="aic-btn cmsPrcDown" data-i="${i}" ${i===processList.length-1?'disabled':''} title="아래로">▼</button>
           <button type="button" class="aic-btn aic-btn-rej cmsPrcDel" data-i="${i}">삭제</button>
-        </div>`).join('') || '<div class="cms-default-note"><b>지금 홈페이지에는 기본 4단계가 나오고 있어요</b><span>상담·현장 확인 → 사인 방향·사양 확인 → 제작 진행 → 현장 시공·검수</span><span>여기에 단계를 추가하면 그것으로 바뀝니다. 비워두면 기본 4단계가 계속 나옵니다.</span></div>'}
-      <div style="margin-top:12px"><button type="button" class="aic-btn" id="cmsPrcAdd">+ 단계 추가</button></div>
+        </div>`).join('') || `<div class="cms-default-note">
+          <b>지금 홈페이지에는 기본 4단계가 나오고 있어요</b>
+          <span>상담·현장 확인 → 방향·사양 확정 → 제작 진행 → 현장 시공·검수</span>
+          <span><b>고치고 싶으면 아래 "기본 4단계 불러오기"</b>를 누르세요. 설명까지 그대로 들어옵니다.</span>
+        </div>`}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="aic-btn" id="cmsPrcAdd">+ 단계 추가</button>
+        ${processList.length?'':'<button type="button" class="aic-btn aic-btn-primary" id="cmsPrcLoad">기본 4단계 불러오기</button>'}
+        ${processList.length?'<button type="button" class="aic-btn" id="cmsPrcReset">전부 지우고 기본으로</button>':''}
+      </div>
     </div>`;
   }
 
@@ -8616,18 +8715,53 @@ function bindWebsiteAdmin(){
     state.cmsCopyOpen[el.dataset.gi] = el.open;
   }));
 
-  // 서비스
+  // 사인 종류
   document.querySelectorAll('.cmsSvcName').forEach(el=> el.addEventListener('change', ()=>{ cmsData.services[+el.dataset.i].name = el.value; }));
   document.querySelectorAll('.cmsSvcText').forEach(el=> el.addEventListener('change', ()=>{ cmsData.services[+el.dataset.i].text = el.value; }));
   document.querySelectorAll('.cmsSvcDel').forEach(el=> el.addEventListener('click', ()=>{ cmsData.services.splice(+el.dataset.i,1); render(); }));
+  document.querySelectorAll('.cmsSvcUp').forEach(el=> el.addEventListener('click', ()=> cmsMoveIn(cmsData.services,+el.dataset.i,-1)));
+  document.querySelectorAll('.cmsSvcDown').forEach(el=> el.addEventListener('click', ()=> cmsMoveIn(cmsData.services,+el.dataset.i,1)));
   const sa=document.getElementById('cmsSvcAdd');
-  if(sa) sa.addEventListener('click', ()=>{ cmsData.services=cmsData.services||[]; cmsData.services.push({name:'',text:''}); render(); });
+  if(sa) sa.addEventListener('click', ()=>{ cmsData.services=cmsAsArray(cmsData.services); cmsData.services.push({name:'',text:''}); render(); });
+  // 기본값을 그대로 목록에 넣어 준다 — 다섯 개를 처음부터 타이핑하지 않게
+  const sl=document.getElementById('cmsSvcLoad');
+  if(sl) sl.addEventListener('click', ()=>{
+    cmsData.services = CMS_DEFAULT_SERVICES.map(x=>({name:x.name,text:x.text}));
+    toast('기본 5가지를 불러왔어요 · 고친 뒤 저장을 누르세요','ok'); render();
+  });
+  const sr=document.getElementById('cmsSvcReset');
+  if(sr) sr.addEventListener('click', ()=>{
+    if(!confirm('지금 목록을 전부 지울까요?\n비우면 홈페이지는 기본 5가지를 다시 보여줍니다.')) return;
+    cmsData.services=[]; toast('비웠어요 · 저장을 눌러야 반영됩니다','ok'); render();
+  });
 
-  // 프로세스
-  document.querySelectorAll('.cmsPrc').forEach(el=> el.addEventListener('change', ()=>{ cmsData.process[+el.dataset.i] = el.value; }));
-  document.querySelectorAll('.cmsPrcDel').forEach(el=> el.addEventListener('click', ()=>{ cmsData.process.splice(+el.dataset.i,1); render(); }));
+  // 진행 절차 — 이름과 설명을 함께 저장한다(문자열만 저장하면 홈페이지 설명이 사라진다)
+  const prcSet=(i,f,v)=>{
+    const arr=cmsStepList(); arr[i]=arr[i]||{name:'',text:''}; arr[i][f]=v; cmsData.process=arr;
+  };
+  document.querySelectorAll('.cmsPrcName').forEach(el=> el.addEventListener('change', ()=> prcSet(+el.dataset.i,'name',el.value)));
+  document.querySelectorAll('.cmsPrcText').forEach(el=> el.addEventListener('change', ()=> prcSet(+el.dataset.i,'text',el.value)));
+  document.querySelectorAll('.cmsPrcDel').forEach(el=> el.addEventListener('click', ()=>{
+    const arr=cmsStepList(); arr.splice(+el.dataset.i,1); cmsData.process=arr; render();
+  }));
+  document.querySelectorAll('.cmsPrcUp').forEach(el=> el.addEventListener('click', ()=>{
+    const arr=cmsStepList(); cmsData.process=arr; cmsMoveIn(arr,+el.dataset.i,-1);
+  }));
+  document.querySelectorAll('.cmsPrcDown').forEach(el=> el.addEventListener('click', ()=>{
+    const arr=cmsStepList(); cmsData.process=arr; cmsMoveIn(arr,+el.dataset.i,1);
+  }));
   const pa=document.getElementById('cmsPrcAdd');
-  if(pa) pa.addEventListener('click', ()=>{ cmsData.process=cmsData.process||[]; cmsData.process.push(''); render(); });
+  if(pa) pa.addEventListener('click', ()=>{ const arr=cmsStepList(); arr.push({name:'',text:''}); cmsData.process=arr; render(); });
+  const pl=document.getElementById('cmsPrcLoad');
+  if(pl) pl.addEventListener('click', ()=>{
+    cmsData.process = CMS_DEFAULT_PROCESS.map(x=>({name:x.name,text:x.text}));
+    toast('기본 4단계를 불러왔어요 · 고친 뒤 저장을 누르세요','ok'); render();
+  });
+  const pr=document.getElementById('cmsPrcReset');
+  if(pr) pr.addEventListener('click', ()=>{
+    if(!confirm('지금 단계를 전부 지울까요?\n비우면 홈페이지는 기본 4단계를 다시 보여줍니다.')) return;
+    cmsData.process=[]; toast('비웠어요 · 저장을 눌러야 반영됩니다','ok'); render();
+  });
 
   // 시공사례
   document.querySelectorAll('.cmsPj').forEach(el=>el.addEventListener('change',()=>{
