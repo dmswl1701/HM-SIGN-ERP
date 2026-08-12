@@ -7,8 +7,18 @@ if(text.includes(marker)){
   console.log('HM photo album patch already applied.');
   process.exit(0);
 }
-const helpers=Buffer.from(fs.readFileSync('scripts/photo-gallery-helpers.b64','utf8').trim(),'base64').toString('utf8');
+let helpers=Buffer.from(fs.readFileSync('scripts/photo-gallery-helpers.b64','utf8').trim(),'base64').toString('utf8');
 const events=Buffer.from(fs.readFileSync('scripts/photo-gallery-events.b64','utf8').trim(),'base64').toString('utf8');
+
+// 새 사진을 서버에 올린 직후 로컬 앨범에도 즉시 넣어, 한 번에 많이 올려도 전부 그대로 보이게 한다.
+helpers=helpers.replace(
+  "return 'photo-'+String(id||'').toLowerCase().replace(/[^0-9a-z]/g,'');",
+  "return 'project-'+String(id||'').toLowerCase().replace(/[^0-9a-z]/g,'');"
+);
+helpers=helpers.replace(
+  "        await cmsGallerySaveHidden(id,'published');\n        G.done++;",
+  "        await cmsGallerySaveHidden(id,'published');\n        cmsPortfolios=cmsPortfolios||[];\n        cmsPortfolios.unshift({id,title:'시공사진',category:'',region:'',summary:'',status:'published',erpQuoteId:'',slug:cmsGalleryHiddenSlug(id),_local:true,_saved:true});\n        await cmsRefreshAssets(id);\n        cmsPortfolioDraftsSave();\n        G.done++;"
+);
 
 function replaceOnce(from,to,label){
   const count=text.split(from).length-1;
