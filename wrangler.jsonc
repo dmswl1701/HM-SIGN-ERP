@@ -9,6 +9,11 @@
 
   "compatibility_date": "2026-08-06",
 
+  // 원본 대형 index.html 은 통째로 덮어쓰지 않고, 배포 직전에 홈페이지 사진 화면만 정확히 패치합니다.
+  "build": {
+    "command": "node scripts/apply-erp-patches.mjs"
+  },
+
   "assets": {
     // 이 폴더 안의 파일이 그대로 배포됩니다.
     "directory": "./public",
