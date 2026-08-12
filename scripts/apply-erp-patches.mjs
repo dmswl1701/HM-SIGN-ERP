@@ -25,6 +25,11 @@ replaceOnce(
 );
 replaceOnce("  if(tab==='copy'){","  if(tab==='portfolio'){ body=cmsRenderPhotoGallery(); }\n\n  if(tab==='copy'){",'album renderer');
 replaceOnce("${T('portfolio','시공사례')}","${T('portfolio','사진')}",'tab label');
+replaceOnce(
+  "${esc(cmsSession.email||'')} 로 로그인됨 · ${tab==='portfolio'?'시공사례는 <b>공개</b> 상태인 프로젝트만 홈페이지에 표시됩니다.':'저장하면 홈페이지에 즉시 반영됩니다.'}",
+  "${esc(cmsSession.email||'')} 로 로그인됨 · ${tab==='portfolio'?'사진을 고르면 자동으로 최적화해 <b>바로 홈페이지에 공개</b>합니다.':'저장하면 홈페이지에 즉시 반영됩니다.'}",
+  'photo tab help text'
+);
 replaceOnce('  // 시공사례\n',events+'  // 시공사례 (기존 프로젝트형 기능은 데이터 호환용으로 유지)\n','gallery events');
 
 fs.writeFileSync(path,text,'utf8');
