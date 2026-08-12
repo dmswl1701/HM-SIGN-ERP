@@ -459,6 +459,10 @@
   .cms-no{font-family:monospace; font-size:11.5px; font-weight:700; color:#A76D18; flex-shrink:0; width:24px;}
   .cms-row input{flex:1; min-width:0; padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-size:13.5px; font-family:inherit;}
   .cms-row input:focus{outline:none; border-color:var(--navy);}
+  /* .aic-btn 은 flex:1 이라 그냥 두면 줄 안에서 버튼이 입력칸만큼 늘어난다.
+     줄 안에서는 내용만큼만 차지하게 고정한다. */
+  .cms-row .aic-btn{flex:0 0 auto; min-width:36px; padding:8px 11px;}
+  .cms-row .cms-move{min-width:32px; padding:8px 6px; font-size:11px; line-height:1;}
   .cms-assets{display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px;}
   .cms-asset{border:1px solid var(--border); border-radius:8px; overflow:hidden; background:#fff;}
   .cms-asset img{display:block; width:100%; aspect-ratio:4/3; object-fit:cover;}
@@ -1094,7 +1098,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V50.0811.EASYEDIT';
+const APP_BUILD = 'V51.0811.PROBE';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6669,6 +6673,42 @@ async function cmsDiscoverKeys(){
   cmsKeys = found;
   return {found, detail};
 }
+/* 저장이 왜 안 되는지 추측하지 않고 직접 확인한다.
+   같은 주소에 여러 모양으로 저장을 시도해 보고, 어떤 모양이 통하는지 그대로 보여준다.
+   실패해도 실제로 만들어졌을 수 있으므로 매번 GET 으로 다시 확인한다. */
+async function cmsProbeWrite(key){
+  const path = CMS_BASE+'/content/'+key;
+  const sample = {__probe:'hm', at:new Date().toISOString()};
+  const shapes = [
+    {name:'{payload,status}',  body:{payload:sample, status:'published'}},
+    {name:'{content,status}',  body:{content:sample, status:'published'}},
+    {name:'{value,status}',    body:{value:sample,   status:'published'}},
+    {name:'{data,status}',     body:{data:sample,    status:'published'}},
+    {name:'펼쳐서 보내기',       body:Object.assign({}, sample, {status:'published'})},
+    {name:'값만 그대로',         body:sample}
+  ];
+  const lines = [];
+  for(const s of shapes){
+    let res;
+    try{
+      const r = await cmsFetchRaw(path, {method:'PUT', body:JSON.stringify(s.body)});
+      let t=''; try{ t=(await r.text()).replace(/\s+/g,' ').slice(0,110); }catch(e){}
+      res = r.status + (t?' · '+t:'');
+    }catch(e){
+      res = '통신오류(응답을 받지 못함) · ' + String(e && e.message || e).slice(0,60);
+    }
+    // 실패로 보여도 실제로 만들어졌는지 확인한다
+    let now='';
+    try{
+      const g = await cmsFetchRaw(path);
+      now = g.status===200 ? '→ 이제 서버에 있음 ✅' : '→ 아직 없음('+g.status+')';
+    }catch(e){ now='→ 확인 실패'; }
+    lines.push(s.name + ' : ' + res + '  ' + now);
+    if(/이제 서버에 있음/.test(now)) break;   // 통하는 모양을 찾았으면 그만
+  }
+  return lines;
+}
+
 /* 진단 — 실제 라우트 기준으로 확인 */
 async function cmsDiagnose(){
   state.cmsDiag = {running:true};
@@ -6680,10 +6720,16 @@ async function cmsDiagnose(){
     let note=''; try{ note=(await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){}
     inqRes.push({path:CMS_BASE+'/inquiries', status:r.status, note});
   }catch(e){ inqRes.push({path:CMS_BASE+'/inquiries', status:'ERR', note:e.message.slice(0,60)}); }
+  // 저장이 안 되는 키가 있으면 어떤 모양이 통하는지 직접 시험해 본다
+  let probe = null;
+  if(!keys.found.includes('pages')){
+    try{ probe = await cmsProbeWrite('pages'); }catch(e){ probe=['시험 실패: '+e.message]; }
+  }
   state.cmsDiag = {
     running:false,
     site:{found: keys.found.length? keys.found.join(', ') : null, results:keys.detail},
-    inq:{found: inqRes[0] && inqRes[0].status===200 ? inqRes[0].path : null, results:inqRes}
+    inq:{found: inqRes[0] && inqRes[0].status===200 ? inqRes[0].path : null, results:inqRes},
+    probe
   };
   render();
 }
@@ -8156,8 +8202,8 @@ function renderWebsiteAdmin(){
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
           <input type="text" class="cmsSvcName" data-i="${i}" value="${esc(s.name||'')}" placeholder="이름 (예: 채널레터)">
           <input type="text" class="cmsSvcText" data-i="${i}" value="${esc(s.text||'')}" placeholder="설명">
-          <button type="button" class="aic-btn cmsSvcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
-          <button type="button" class="aic-btn cmsSvcDown" data-i="${i}" ${i===list.length-1?'disabled':''} title="아래로">▼</button>
+          <button type="button" class="aic-btn cms-move cmsSvcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
+          <button type="button" class="aic-btn cms-move cmsSvcDown" data-i="${i}" ${i===list.length-1?'disabled':''} title="아래로">▼</button>
           <button type="button" class="aic-btn aic-btn-rej cmsSvcDel" data-i="${i}">삭제</button>
         </div>`).join('') || `<div class="cms-default-note">
           <b>지금 홈페이지에는 기본 5가지가 나오고 있어요</b>
@@ -8180,8 +8226,8 @@ function renderWebsiteAdmin(){
           <span class="cms-no">${String(i+1).padStart(2,'0')}</span>
           <input type="text" class="cmsPrcName" data-i="${i}" value="${esc(p.name||'')}" placeholder="단계 이름 (예: 상담·현장 확인)">
           <input type="text" class="cmsPrcText" data-i="${i}" value="${esc(p.text||'')}" placeholder="설명">
-          <button type="button" class="aic-btn cmsPrcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
-          <button type="button" class="aic-btn cmsPrcDown" data-i="${i}" ${i===processList.length-1?'disabled':''} title="아래로">▼</button>
+          <button type="button" class="aic-btn cms-move cmsPrcUp" data-i="${i}" ${i===0?'disabled':''} title="위로">▲</button>
+          <button type="button" class="aic-btn cms-move cmsPrcDown" data-i="${i}" ${i===processList.length-1?'disabled':''} title="아래로">▼</button>
           <button type="button" class="aic-btn aic-btn-rej cmsPrcDel" data-i="${i}">삭제</button>
         </div>`).join('') || `<div class="cms-default-note">
           <b>지금 홈페이지에는 기본 4단계가 나오고 있어요</b>
@@ -8635,6 +8681,16 @@ function renderWebsiteAdmin(){
         <div class="aic-sub" style="margin:-8px 0 12px">200 = 사용 가능 · 404 = 없는 주소 · 401/403 = 권한 문제</div>
         ${row('사이트 설정', d.site)}
         ${row('문의함', d.inq)}
+        ${d.probe? `
+        <div style="margin-bottom:12px">
+          <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:6px">
+            문구 저장 시험 <span class="aic-badge ${d.probe.some(x=>/이제 서버에 있음/.test(x))?'done':'rej'}">${d.probe.some(x=>/이제 서버에 있음/.test(x))?'통하는 모양 찾음':'전부 실패'}</span>
+          </div>
+          <div class="aic-sub" style="margin-bottom:6px;font-size:11.5px">
+            문구(pages)가 저장되지 않아, 여러 모양으로 실제 저장을 시도해 본 결과입니다.
+          </div>
+          <pre class="aic-doc-body" style="max-height:240px">${esc(d.probe.join('\n'))}</pre>
+        </div>`:''}
         <div class="aic-dm-ok" style="font-size:12px">모두 404 라면 Worker 의 관리자 라우트 주소가 위 후보와 다릅니다.
         이 화면을 캡처해서 알려주시면 맞춰 수정하겠습니다.</div>
       </div>`; })()}
