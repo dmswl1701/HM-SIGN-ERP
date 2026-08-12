@@ -1098,7 +1098,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V55.0811.LIVECHECK';
+const APP_BUILD = 'V56.0812.MISSINGROW';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6726,7 +6726,17 @@ async function cmsVerifySaved(key, value){
     const r = await cmsFetchRaw(CMS_BASE+'/content/'+key);
     if(r.status!==200) return {ok:false, why:'서버에 아직 없음 ('+r.status+')'};
     const row = await r.json();
-    const got = cmsRowValue(Array.isArray(row)? row[0] : row);
+    const one = Array.isArray(row)? row[0] : row;
+    /* ⚠ 200 이 왔다고 그 줄이 실제로 있는 것은 아니다.
+       Worker 는 없는 줄을 조회하면 {content_key, status:'draft'} 같은 빈 껍데기를 만들어
+       200 으로 돌려준다. payload 칸이 아예 없으면 표에 그 줄이 없다는 뜻이다.
+       (2026-08-12 Supabase 표에서 확인: website_site_content 에 pages 줄이 없었다) */
+    const hasPayload = one && typeof one==='object' &&
+      ['payload','content','value','data','body'].some(f=>one[f]!==undefined);
+    if(!hasPayload) return {ok:false, missingRow:true,
+      why:'서버 표에 이 줄이 아직 없습니다. Supabase → Table Editor → website_site_content 에서 '
+        +'content_key="'+key+'", payload={}, status=published 로 줄을 하나 추가하면 이후에는 정상 저장됩니다.'};
+    const got = cmsRowValue(one);
     if(cmsDeepEqual(got, value)) return {ok:true};
     const a=JSON.stringify(got===undefined?null:got), b=JSON.stringify(value===undefined?null:value);
     return {ok:false, why:'서버 값이 보낸 것과 다름 (서버 '+a.length+'자 · 보낸 값 '+b.length+'자)'
@@ -6985,6 +6995,9 @@ async function cmsSaveSite(){
         if(v.ok){
           okList.push(key);
           try{ const g=await cmsFetchRaw(CMS_BASE+'/content/'+key); if(g.status===200) cmsRows[key]=await g.json(); }catch(e2){}
+        }else if(v.missingRow){
+          // 통신 문제가 아니다. 표에 줄이 없어서 못 만드는 것이니 그렇게 알려야 한다.
+          failList.push((CMS_KEY_LABEL[key]||key)+'('+key+') → '+v.why);
         }else{
           failList.push(cmsSaveHint(key) + ' [' + v.why + ']');
         }
