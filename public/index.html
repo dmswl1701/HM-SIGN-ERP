@@ -1098,7 +1098,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V51.0811.PROBE';
+const APP_BUILD = 'V52.0811.PROBE2';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6720,17 +6720,23 @@ async function cmsDiagnose(){
     let note=''; try{ note=(await r.clone().text()).replace(/\s+/g,' ').slice(0,90); }catch(e){}
     inqRes.push({path:CMS_BASE+'/inquiries', status:r.status, note});
   }catch(e){ inqRes.push({path:CMS_BASE+'/inquiries', status:'ERR', note:e.message.slice(0,60)}); }
-  // 저장이 안 되는 키가 있으면 어떤 모양이 통하는지 직접 시험해 본다
-  let probe = null;
-  if(!keys.found.includes('pages')){
-    try{ probe = await cmsProbeWrite('pages'); }catch(e){ probe=['시험 실패: '+e.message]; }
-  }
   state.cmsDiag = {
     running:false,
     site:{found: keys.found.length? keys.found.join(', ') : null, results:keys.detail},
     inq:{found: inqRes[0] && inqRes[0].status===200 ? inqRes[0].path : null, results:inqRes},
-    probe
+    probe: (state.cmsDiag && state.cmsDiag.probe) || null
   };
+  render();
+}
+/* 저장 시험을 버튼으로 직접 돌린다.
+   행이 이미 있어도(=200) 내용이 비어 있으면 저장은 안 되는 것이므로 조건 없이 돌려야 한다. */
+async function cmsRunProbe(){
+  state.cmsDiag = Object.assign({}, state.cmsDiag||{}, {probe:['시험 중…']});
+  render();
+  let lines;
+  try{ lines = await cmsProbeWrite('pages'); }
+  catch(e){ lines = ['시험 실패: '+(e&&e.message||e)]; }
+  state.cmsDiag = Object.assign({}, state.cmsDiag||{}, {probe:lines});
   render();
 }
 /* 서버 행에서 실제 콘텐츠 본문을 꺼낸다 (컬럼명이 구현마다 다를 수 있어 넓게 대응) */
@@ -8681,16 +8687,19 @@ function renderWebsiteAdmin(){
         <div class="aic-sub" style="margin:-8px 0 12px">200 = 사용 가능 · 404 = 없는 주소 · 401/403 = 권한 문제</div>
         ${row('사이트 설정', d.site)}
         ${row('문의함', d.inq)}
-        ${d.probe? `
-        <div style="margin-bottom:12px">
+        <div style="margin-bottom:12px;border-top:1px solid var(--border);padding-top:12px">
           <div style="font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:6px">
-            문구 저장 시험 <span class="aic-badge ${d.probe.some(x=>/이제 서버에 있음/.test(x))?'done':'rej'}">${d.probe.some(x=>/이제 서버에 있음/.test(x))?'통하는 모양 찾음':'전부 실패'}</span>
+            문구 저장 시험
+            ${d.probe && d.probe.some(x=>/이제 서버에 있음/.test(x)) ? '<span class="aic-badge done">통하는 모양 찾음</span>'
+              : (d.probe && d.probe.length>1 ? '<span class="aic-badge rej">전부 실패</span>' : '')}
           </div>
-          <div class="aic-sub" style="margin-bottom:6px;font-size:11.5px">
-            문구(pages)가 저장되지 않아, 여러 모양으로 실제 저장을 시도해 본 결과입니다.
+          <div class="aic-sub" style="margin-bottom:8px;font-size:11.5px;line-height:1.7">
+            문구(pages)가 저장되지 않을 때 누르세요. 여러 방식으로 <b>실제 저장을 시도</b>해 보고
+            어떤 방식이 통하는지 알려줍니다. 시험용 값이라 홈페이지 문구를 건드리지 않습니다.
           </div>
-          <pre class="aic-doc-body" style="max-height:240px">${esc(d.probe.join('\n'))}</pre>
-        </div>`:''}
+          <button type="button" class="aic-btn aic-btn-primary" id="cmsProbeBtn" style="flex:0 0 auto;padding:8px 14px">문구 저장 시험하기</button>
+          ${d.probe? `<pre class="aic-doc-body" style="max-height:240px;margin-top:9px">${esc(d.probe.join('\n'))}</pre>`:''}
+        </div>
         <div class="aic-dm-ok" style="font-size:12px">모두 404 라면 Worker 의 관리자 라우트 주소가 위 후보와 다릅니다.
         이 화면을 캡처해서 알려주시면 맞춰 수정하겠습니다.</div>
       </div>`; })()}
@@ -8759,6 +8768,8 @@ function bindWebsiteAdmin(){
   if(rt) rt.addEventListener('click', ()=>{ state.cmsErr=null; cmsData=null; cmsLoadAll(); });
   const dg=document.getElementById('cmsDiagBtn');
   if(dg) dg.addEventListener('click', e=>{ e.preventDefault(); cmsDiagnose(); });
+  const pb=document.getElementById('cmsProbeBtn');
+  if(pb) pb.addEventListener('click', ()=>cmsRunProbe());
 
   // 탭
   document.querySelectorAll('.cmsTab').forEach(el=> el.addEventListener('click', ()=>{ state.cmsTab=el.dataset.t; render(); }));
