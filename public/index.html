@@ -1098,7 +1098,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V52.0811.PROBE2';
+const APP_BUILD = 'V53.0811.VERIFY';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6676,6 +6676,18 @@ async function cmsDiscoverKeys(){
 /* 저장이 왜 안 되는지 추측하지 않고 직접 확인한다.
    같은 주소에 여러 모양으로 저장을 시도해 보고, 어떤 모양이 통하는지 그대로 보여준다.
    실패해도 실제로 만들어졌을 수 있으므로 매번 GET 으로 다시 확인한다. */
+/* 서버에 실제로 그 값이 들어갔는지 확인한다.
+   ⚠ 행이 있는지(200)만 보면 안 된다 — 행은 원래 있을 수 있다. 내용을 비교해야 한다. */
+async function cmsVerifySaved(key, value){
+  try{
+    const r = await cmsFetchRaw(CMS_BASE+'/content/'+key);
+    if(r.status!==200) return false;
+    const row = await r.json();
+    const got = cmsRowValue(Array.isArray(row)? row[0] : row);
+    return JSON.stringify(got) === JSON.stringify(value);
+  }catch(e){ return false; }
+}
+
 async function cmsProbeWrite(key){
   const path = CMS_BASE+'/content/'+key;
   const sample = {__probe:'hm', at:new Date().toISOString()};
@@ -6697,14 +6709,12 @@ async function cmsProbeWrite(key){
     }catch(e){
       res = '통신오류(응답을 받지 못함) · ' + String(e && e.message || e).slice(0,60);
     }
-    // 실패로 보여도 실제로 만들어졌는지 확인한다
-    let now='';
-    try{
-      const g = await cmsFetchRaw(path);
-      now = g.status===200 ? '→ 이제 서버에 있음 ✅' : '→ 아직 없음('+g.status+')';
-    }catch(e){ now='→ 확인 실패'; }
+    // 실패로 보여도 실제로 값이 들어갔는지 확인한다.
+    // 행이 있는지가 아니라 "내가 보낸 값이 들어갔는지" 를 봐야 한다.
+    const okNow = await cmsVerifySaved(key, sample);
+    const now = okNow ? '→ 값이 실제로 저장됨 ✅' : '→ 값이 안 들어감';
     lines.push(s.name + ' : ' + res + '  ' + now);
-    if(/이제 서버에 있음/.test(now)) break;   // 통하는 모양을 찾았으면 그만
+    if(okNow) break;   // 통하는 모양을 찾았으면 그만
   }
   return lines;
 }
@@ -6922,10 +6932,16 @@ async function cmsSaveSite(){
       let r;
       try{ r = await cmsFetchRaw(CMS_BASE+'/content/'+key, {method:'PUT', body}); }
       catch(e){
-        /* fetch 자체가 튕겼다 = 요청이 서버에 닿지도 못했다.
-           다른 키는 되는데 이 키만 이러면 십중팔구 Worker 가 그 키를 모르는 것이다
-           (허용 목록에 없으면 브라우저 사전확인 단계에서 막혀 400 이 아니라 통신오류가 난다). */
-        failList.push(cmsSaveHint(key));
+        /* fetch 가 튕겼다고 저장이 안 된 것은 아니다.
+           `pages` 는 서버가 값을 제대로 받아 저장하는데 그 응답만 브라우저에 닿지 못한다
+           (2026-08-11 저장 시험으로 확인: PUT 은 Failed to fetch, 그런데 값은 들어가 있었다).
+           그래서 응답이 없으면 다시 읽어 보고, 값이 들어갔으면 성공으로 친다. */
+        if(await cmsVerifySaved(key, cmsData[key])){
+          okList.push(key);
+          try{ const g=await cmsFetchRaw(CMS_BASE+'/content/'+key); if(g.status===200) cmsRows[key]=await g.json(); }catch(e2){}
+        }else{
+          failList.push(cmsSaveHint(key));
+        }
         continue;
       }
       if(r.status>=200 && r.status<300){
