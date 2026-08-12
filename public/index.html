@@ -1098,7 +1098,7 @@ function updateCloudBadge(){
 
 
 /* ===== 새 버전 감지 ===== */
-const APP_BUILD = 'V54.0811.DEEPEQ';
+const APP_BUILD = 'V55.0811.LIVECHECK';
 async function checkNewVersion(){
   // http/https 환경에서만 버전 체크 (file:// 등에서는 콘솔 에러 방지)
   if(!/^https?:$/.test(location.protocol)) return;
@@ -6701,6 +6701,26 @@ function cmsDeepEqual(a,b){
 /* 서버에 실제로 그 값이 들어갔는지 확인한다.
    ⚠ 행이 있는지(200)만 보면 안 된다 — 행은 원래 있을 수 있다. 내용을 비교해야 한다.
    왜 안 맞는지도 함께 돌려준다. 다음에 또 막혔을 때 추측하지 않으려면 이 정보가 필요하다. */
+/* 저장한 항목이 홈페이지가 실제로 가져가는 자리(공개 API)에 나오는지 확인한다.
+   공개 API 는 published 인 것만 내보내므로, 여기 없으면 화면에도 안 나온다.
+   나오지 않는 키 목록을 돌려준다. 확인 자체가 안 되면 빈 배열(괜한 경고를 띄우지 않는다). */
+async function cmsCheckLive(keys){
+  if(!keys || !keys.length) return [];
+  try{
+    const r = await fetch(CMS_API+'/api/v1/public/site',{headers:{accept:'application/json'},cache:'no-store'});
+    if(!r.ok) return [];
+    const pub = await r.json();
+    if(!pub || typeof pub!=='object') return [];
+    return keys.filter(k=>{
+      const v = pub[k];
+      if(v===undefined || v===null) return true;
+      if(typeof v==='object' && !Array.isArray(v) && !Object.keys(v).length
+         && cmsData[k] && Object.keys(cmsData[k]||{}).length) return true;
+      return false;
+    });
+  }catch(e){ return []; }
+}
+
 async function cmsVerifySaved(key, value){
   try{
     const r = await cmsFetchRaw(CMS_BASE+'/content/'+key);
@@ -6978,7 +6998,20 @@ async function cmsSaveSite(){
         failList.push(key+' → '+r.status+(msg?' '+msg:''));
       }
     }
-    if(okList.length && !failList.length){
+    /* 서버에 저장됐다고 끝이 아니다.
+       홈페이지는 published 상태인 것만 가져간다. 저장은 됐는데 draft 로 남으면
+       화면에는 영영 안 나오는데 ERP 는 "반영했어요" 라고 거짓말을 하게 된다.
+       그래서 실제 공개 API 를 열어 그 항목이 나오는지까지 확인한다. */
+    const notLive = await cmsCheckLive(okList);
+    if(notLive.length){
+      state.cmsErr = '저장은 됐지만 홈페이지에 아직 안 나오는 항목이 있어요';
+      state.cmsSaveTried = notLive.map(k=>
+        (CMS_KEY_LABEL[k]||k)+'('+k+') → 서버에는 저장됐는데 공개 상태가 아니라 홈페이지가 가져가지 못합니다. '
+        +'Supabase → Table Editor → website_site_content → content_key 가 "'+k+'" 인 줄의 '
+        +'status 를 draft 에서 published 로 바꿔 주세요.');
+      toast('저장은 됐지만 홈페이지에 아직 안 나와요 — 아래 안내를 확인해 주세요','warn');
+      logActivity('홈페이지 콘텐츠 수정 (CMS, 미공개): '+notLive.join(', '), '변경');
+    }else if(okList.length && !failList.length){
       toast('홈페이지에 반영했어요 ('+okList.length+'개 항목)','ok');
       logActivity('홈페이지 콘텐츠 수정 (CMS): '+okList.join(', '), '변경');
       state.cmsErr = null; state.cmsSaveTried = null;
