@@ -38,6 +38,14 @@ const groupedUpload=String.raw`async function cmsGalleryUploadFiles(fileList){
   if(raw.length>120) skipped+=raw.length-120;
   if(!valid.length){ toast('올릴 수 있는 사진이 없어요 · JPG/PNG/WebP, 장당 15MB 이하','warn'); return; }
   if(skipped) toast(skipped+'장은 중복·형식·용량 문제로 제외했어요','warn');
+  // 한 묶음이 너무 커지면 홈페이지에서 그 묶음이 아예 안 열린다 (CMS_ALBUM_MAX 설명 참고)
+  if(valid.length>CMS_ALBUM_MAX){
+    const over=valid.length-CMS_ALBUM_MAX;
+    valid.length=CMS_ALBUM_MAX;
+    alert('한 묶음에는 사진 '+CMS_ALBUM_MAX+'장까지만 들어갑니다.\n\n'
+      +'앞의 '+CMS_ALBUM_MAX+'장을 올리고, 나머지 '+over+'장은 올리지 않았습니다.\n'
+      +'남은 사진은 다시 골라 새 묶음으로 올려 주세요.');
+  }
 
   const titleEl=document.getElementById('cmsGalleryTitle');
   const categoryEl=document.getElementById('cmsGalleryCategory');
@@ -128,7 +136,7 @@ function replaceOnce(from,to,label){
   text=text.replace(from,to);
 }
 
-replaceOnce("const APP_BUILD = 'V56.0812.MISSINGROW';","const APP_BUILD = 'V59.0812.PHOTOORGANIZER';",'build version');
+replaceOnce("const APP_BUILD = 'V56.0812.MISSINGROW';","const APP_BUILD = 'V60.0813.ALBUMCAP';",'build version');
 replaceOnce('function renderWebsiteAdmin(){',helpers+'\nfunction renderWebsiteAdmin(){','gallery helpers');
 replaceOnce(
   "  if(tab==='portfolio'){\n    const list=Array.isArray(cmsPortfolios)?cmsPortfolios:[];\n    const sites=(state.quotes||[]).filter(q=>q.status==='시공완료'||q.status==='계약');",

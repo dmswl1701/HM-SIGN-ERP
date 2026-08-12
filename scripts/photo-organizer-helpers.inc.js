@@ -1,3 +1,11 @@
+/* 한 묶음에 넣을 수 있는 사진 수 (2026-08-13 실측으로 정한 값)
+   홈페이지가 묶음을 열 때 CMS Worker 는 사진 1장마다 주소 2개(원본·썸네일)에 서명한다.
+   그래서 바깥 요청을 2N+3 번 쓰는데, Cloudflare Worker 는 요청 하나에 바깥 요청 50번이 한계다.
+   → 24장부터 503 이 떨어져 그 묶음이 홈페이지에서 아예 안 열린다 (목록에서 실제로 확인함).
+   여유를 두고 20장에서 끊는다. 이 숫자를 올리려면 Worker 가 서명을 한 번에 모아 하도록
+   먼저 고쳐야 한다. */
+const CMS_ALBUM_MAX=20;
+
 function cmsGalleryCategoryOf(p){
   return String((p&&(p.category||p.industry))||'').trim();
 }
@@ -119,6 +127,17 @@ async function cmsGalleryAddFiles(id,fileList){
   if(raw.length>120) skipped+=raw.length-120;
   if(!valid.length){ toast('올릴 수 있는 사진이 없어요','warn'); return; }
   const existing=(cmsAssets[id]||[]).length;
+  const room=CMS_ALBUM_MAX-existing;
+  if(room<=0){
+    toast('이 묶음은 사진 '+CMS_ALBUM_MAX+'장이 다 찼어요 · 새 묶음으로 올려 주세요','warn');
+    return;
+  }
+  if(valid.length>room){
+    const over=valid.length-room;
+    valid.length=room;   // const 배열이라 길이를 줄여 잘라낸다
+    alert('한 묶음에는 사진 '+CMS_ALBUM_MAX+'장까지만 들어갑니다.\n\n'
+      +room+'장을 채우고, 나머지 '+over+'장은 올리지 않았습니다.\n남은 사진은 새 묶음으로 올려 주세요.');
+  }
   const G=cmsGalleryUploadState={running:true,total:valid.length,done:0,failed:0,previews:[],errors:[]};
   cmsWakeOn(); render();
   let cursor=0;
@@ -169,7 +188,7 @@ function cmsRenderPhotoGallery(){
       <div class="panel" style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
           <div style="min-width:220px;flex:1">
-            <div style="font-size:12px;color:var(--text-mute);margin-bottom:5px">사진 묶음 · ${assets.length}장</div>
+            <div style="font-size:12px;color:var(--text-mute);margin-bottom:5px">사진 묶음 · ${assets.length}/${CMS_ALBUM_MAX}장${assets.length>=CMS_ALBUM_MAX?' · 가득 참':''}</div>
             <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(150px,1fr);gap:8px">
               <input id="cmsAlbumTitle_${safeId}" value="${esc(title)}" maxlength="200" placeholder="사진 묶음 이름">
               <input id="cmsAlbumCategory_${safeId}" value="${esc(category)}" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류 없음">
@@ -222,7 +241,7 @@ function cmsRenderPhotoGallery(){
         </span>`).join('')}</div>`:''}
       <label class="cms-upload-zone" id="cmsGalleryZone" style="min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer">
         <b style="font-size:16px">＋ 사진 여러 장 추가</b>
-        <span>JPG/PNG/WebP · 장당 15MB 이하 · 한 번에 최대 120장</span>
+        <span>JPG/PNG/WebP · 장당 15MB 이하 · 한 묶음에 최대 ${CMS_ALBUM_MAX}장</span>
         <input type="file" id="cmsGalleryInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" ${G.running?'disabled':''}>
       </label>
       ${G.running?`<div style="margin-top:14px">
