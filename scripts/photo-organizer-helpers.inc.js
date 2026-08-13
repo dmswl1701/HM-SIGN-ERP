@@ -6,6 +6,135 @@
    먼저 고쳐야 한다. */
 const CMS_ALBUM_MAX=20;
 
+/* 묶음 합치기 — 고른 묶음들을 하나로 모은다.
+   ⚠ 서버가 사진을 다른 묶음으로 옮겨주지 못한다 (asset PATCH 가 role·sort_order 만 받는다).
+     그래서 ERP 가 사진을 내려받아 대상 묶음에 다시 올리고, 다 옮긴 뒤에만 원래 묶음을 지운다.
+     한 장이라도 실패하면 원래 묶음을 남겨 둔다 — 사진이 사라지는 일은 없어야 한다. */
+let cmsMergePick={};
+let cmsMergeState=null;   // {running,total,done,failed,label}
+
+function cmsMergePicked(){
+  return Object.keys(cmsMergePick)
+    .filter(id=>cmsMergePick[id])
+    .map(id=>(cmsPortfolios||[]).find(p=>p.id===id))
+    .filter(Boolean);
+}
+/* 묶음을 하나 더 고를 때마다 화면을 다시 그리므로, 적어 둔 이름이 날아가지 않게 붙잡아 둔다 */
+let cmsMergeDraft=null;
+function cmsMergeCaptureDraft(){
+  const t=document.getElementById('cmsMergeTitle'), c=document.getElementById('cmsMergeCategory');
+  if(t||c) cmsMergeDraft={title:(t&&t.value)||'', category:(c&&c.value)||''};
+}
+function cmsGalleryTogglePick(id){
+  cmsMergeCaptureDraft();
+  if(cmsMergePick[id]) delete cmsMergePick[id]; else cmsMergePick[id]=true;
+  if(!Object.keys(cmsMergePick).length) cmsMergeDraft=null;
+  render();
+}
+function cmsGalleryClearPick(){ cmsMergePick={}; cmsMergeDraft=null; render(); }
+
+/* 사진 1장을 다른 묶음으로 옮긴다. 내려받은 최적화본(2000px webp)을 다시 올린다.
+   원본까지는 못 가져온다 — 서버가 원본 주소를 내주지 않는다. */
+async function cmsMergeCopyPhoto(asset, targetId, sortOrder){
+  const url=asset&&(asset.image_url||asset.optimized_url||asset.preview_url||asset.thumbnail_url);
+  if(!url) throw new Error('사진 주소를 찾지 못했어요');
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('사진을 내려받지 못했어요 ('+r.status+')');
+  const blob=await r.blob();
+  if(!/^image\/(jpeg|png|webp)$/i.test(blob.type||'')) throw new Error('사진 형식을 알 수 없어요');
+  const ext=(blob.type.split('/')[1]||'webp').replace('jpeg','jpg');
+  const base=String(asset.original_name||'photo').replace(/\.[^.]+$/,'').slice(0,80)||'photo';
+  const file=new File([blob], base+'.'+ext, {type:blob.type, lastModified:Date.now()});
+  await cmsUploadAsset(targetId, file, 'gallery', sortOrder);
+}
+
+async function cmsGalleryMergeAlbums(){
+  if(cmsMergeState&&cmsMergeState.running) return;
+  const picked=cmsMergePicked();
+  if(picked.length<2){ toast('묶음을 2개 이상 골라 주세요','warn'); return; }
+
+  const target=picked[0], sources=picked.slice(1);
+  const already=(cmsAssets[target.id]||[]).length;
+  const moving=sources.reduce((s,p)=>s+(cmsAssets[p.id]||[]).length,0);
+  if(already+moving>CMS_ALBUM_MAX){
+    alert('합치면 사진이 '+(already+moving)+'장이 되어 한 묶음 한도('+CMS_ALBUM_MAX+'장)를 넘습니다.\n\n'
+      +'묶음을 몇 개 빼고 다시 눌러 주세요.');
+    return;
+  }
+
+  const titleEl=document.getElementById('cmsMergeTitle');
+  const categoryEl=document.getElementById('cmsMergeCategory');
+  const title=String((titleEl&&titleEl.value)||target.title||'').trim().slice(0,200);
+  const category=String((categoryEl&&categoryEl.value)||cmsGalleryCategoryOf(target)).trim().slice(0,100);
+  if(!title){ toast('합친 묶음의 이름을 입력해 주세요','warn'); if(titleEl)titleEl.focus(); return; }
+  if(!confirm('묶음 '+picked.length+'개를 「'+title+'」 하나로 합칠까요?\n\n'
+    +'· 사진 '+moving+'장을 옮기고, 옮긴 묶음은 삭제합니다\n'
+    +'· 사진이 다 옮겨진 뒤에만 삭제하므로 사진이 사라지지 않습니다\n'
+    +'· 옮기는 동안 화면을 끄지 말아 주세요')) return;
+
+  cmsMergeState={running:true,total:moving,done:0,failed:0,label:title};
+  cmsWakeOn(); render();
+  const kept=[];
+  try{
+    let cursor=already;
+    for(const src of sources){
+      // 서명된 사진 주소는 1시간이면 만료된다 — 옮기기 직전에 새로 받는다
+      const assets=await cmsRefreshAssets(src.id);
+      let allOk=true;
+      for(const a of assets){
+        try{
+          await cmsMergeCopyPhoto(a, target.id, cursor++);
+          cmsMergeState.done++;
+        }catch(e){
+          allOk=false; cmsMergeState.failed++;
+          state.cmsSaveTried=(state.cmsSaveTried||[]).concat([(src.title||'묶음')+' → '+(e&&e.message?e.message:String(e))]);
+        }
+        cmsMergeUpdateProgress();
+      }
+      if(allOk){
+        const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+src.id,{method:'DELETE'});
+        if((r.status>=200&&r.status<300)||r.status===404){
+          cmsPortfolios=(cmsPortfolios||[]).filter(x=>x.id!==src.id);
+          delete cmsAssets[src.id];
+        }else{ kept.push(src.title||'묶음'); }
+      }else{
+        kept.push(src.title||'묶음');   // 실패한 사진이 있으면 원본을 남긴다
+      }
+    }
+    await cmsGalleryPutAlbum(target,{title,category});
+    await cmsEnsureCover(target.id).catch(()=>false);
+  }catch(e){
+    state.cmsErr='묶음 합치기 실패: '+(e&&e.message?e.message:e);
+  }finally{
+    cmsWakeOff();
+    cmsMergeState.running=false;
+    cmsMergePick={}; cmsMergeDraft=null;
+    await cmsLoadPortfolios();
+    cmsPortfolioDraftsSave();
+  }
+
+  if(cmsMergeState.failed){
+    state.cmsErr='사진 '+cmsMergeState.failed+'장을 옮기지 못했어요';
+    toast(cmsMergeState.done+'장 옮김 · '+cmsMergeState.failed+'장 실패','warn');
+  }else{
+    state.cmsErr=null; state.cmsSaveTried=null;
+    toast('「'+title+'」 하나로 합쳤어요 · 사진 '+(already+cmsMergeState.done)+'장','ok');
+    logActivity('홈페이지 사진 묶음 합치기: '+title+' ('+picked.length+'개 → 1개)','변경');
+  }
+  if(kept.length) alert('사진을 다 옮기지 못한 묶음은 지우지 않고 그대로 뒀습니다:\n\n'+kept.join('\n'));
+  cmsMergeState=null;
+  render();
+}
+
+/* 진행률만 다시 그린다 (전체 render 는 입력칸 포커스를 잃게 한다) */
+function cmsMergeUpdateProgress(){
+  const M=cmsMergeState; if(!M) return;
+  const t=document.getElementById('cmsMergeProgressText');
+  const b=document.getElementById('cmsMergeProgressBar');
+  if(t) t.textContent='사진 '+M.total+'장 중 '+M.done+'장 옮김'+(M.failed?' · 실패 '+M.failed+'장':'');
+  if(b) b.style.width=(M.total?Math.round((M.done+M.failed)/M.total*100):0)+'%';
+}
+
 function cmsGalleryCategoryOf(p){
   return String((p&&(p.category||p.industry))||'').trim();
 }
@@ -179,16 +308,24 @@ function cmsRenderPhotoGallery(){
   const list=Array.isArray(cmsPortfolios)?cmsPortfolios:[];
   const cats=cmsGalleryCategories();
   const G=cmsGalleryUploadState||{running:false,total:0,done:0,failed:0,previews:[]};
+  const M=cmsMergeState;
+  const picks=cmsMergePicked();
+  const pickPhotos=picks.reduce((s,p)=>s+((cmsAssets[p.id]||[]).length),0);
+  const pickOver=pickPhotos>CMS_ALBUM_MAX;
   const albums=list.map(p=>{
     const assets=cmsAssets[p.id]||[];
     const category=cmsGalleryCategoryOf(p);
     const title=String(p.title||'시공사진');
     const safeId=esc(p.id);
+    const picked=!!cmsMergePick[p.id];
     return `
-      <div class="panel" style="margin-bottom:12px">
+      <div class="panel" style="margin-bottom:12px${picked?';outline:2px solid var(--navy);outline-offset:-2px':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
           <div style="min-width:220px;flex:1">
-            <div style="font-size:12px;color:var(--text-mute);margin-bottom:5px">사진 묶음 · ${assets.length}/${CMS_ALBUM_MAX}장${assets.length>=CMS_ALBUM_MAX?' · 가득 참':''}</div>
+            <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-mute);margin-bottom:5px;cursor:pointer">
+              <input type="checkbox" class="cmsAlbumPick" data-id="${safeId}" ${picked?'checked':''} style="width:18px;height:18px;margin:0">
+              <span>사진 묶음 · ${assets.length}/${CMS_ALBUM_MAX}장${assets.length>=CMS_ALBUM_MAX?' · 가득 참':''}</span>
+            </label>
             <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(150px,1fr);gap:8px">
               <input id="cmsAlbumTitle_${safeId}" value="${esc(title)}" maxlength="200" placeholder="사진 묶음 이름">
               <input id="cmsAlbumCategory_${safeId}" value="${esc(category)}" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류 없음">
@@ -251,8 +388,31 @@ function cmsRenderPhotoGallery(){
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0 10px">
       <h2 style="margin:0">사진 묶음 (${list.length})</h2>
-      <span class="aic-sub">제목·분류 수정 · 사진 추가/삭제 가능</span>
+      <span class="aic-sub">왼쪽 칸을 눌러 고르면 여러 묶음을 하나로 합칠 수 있어요</span>
     </div>
+    ${M&&M.running?`
+      <div class="panel" style="position:sticky;top:0;z-index:6;border-color:var(--navy)">
+        <b style="color:var(--navy)">「${esc(M.label)}」로 합치는 중…</b>
+        <div class="aic-sub" style="margin:6px 0 8px">사진을 옮기는 동안 화면을 끄거나 다른 앱으로 넘어가지 말아 주세요.</div>
+        <div id="cmsMergeProgressText" style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:7px">사진 ${M.total}장 중 ${M.done}장 옮김${M.failed?' · 실패 '+M.failed+'장':''}</div>
+        <div class="cms-upload-progress"><i id="cmsMergeProgressBar" style="width:${M.total?Math.round((M.done+M.failed)/M.total*100):0}%"></i></div>
+      </div>`
+    :(picks.length?`
+      <div class="panel" style="position:sticky;top:0;z-index:6;border-color:var(--navy)">
+        <b style="color:var(--navy)">묶음 ${picks.length}개 선택됨 · 사진 ${pickPhotos}장</b>
+        <div class="aic-sub" style="margin:6px 0 10px;line-height:1.7">
+          맨 위에 있는 <b>「${esc(picks[0].title||'제목 없음')}」</b>에 나머지 사진을 모읍니다. 옮긴 묶음은 사라집니다.
+          ${pickOver?`<br><span style="color:#b33;font-weight:700">사진이 ${pickPhotos}장이라 한 묶음 한도(${CMS_ALBUM_MAX}장)를 넘습니다. 묶음을 몇 개 빼 주세요.</span>`:''}
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(140px,1fr);gap:8px;margin-bottom:9px">
+          <input type="text" id="cmsMergeTitle" maxlength="200" placeholder="합친 뒤 이름" value="${esc(cmsMergeDraft?cmsMergeDraft.title:(picks[0].title||''))}">
+          <input type="text" id="cmsMergeCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류" value="${esc(cmsMergeDraft?cmsMergeDraft.category:cmsGalleryCategoryOf(picks[0]))}">
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button type="button" class="aic-btn" id="cmsMergeRun" ${(picks.length<2||pickOver)?'disabled':''}>${picks.length}개를 하나로 합치기</button>
+          <button type="button" class="aic-btn" id="cmsMergeClear">선택 해제</button>
+        </div>
+      </div>`:'')}
     ${albums||'<div class="panel"><div class="empty">아직 사진 묶음이 없어요. 위에서 사진을 여러 장 골라 올려 주세요.</div></div>'}
   `;
 }
