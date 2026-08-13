@@ -1,10 +1,9 @@
-/* 한 묶음에 넣을 수 있는 사진 수 (2026-08-13 실측으로 정한 값)
-   홈페이지가 묶음을 열 때 CMS Worker 는 사진 1장마다 주소 2개(원본·썸네일)에 서명한다.
-   그래서 바깥 요청을 2N+3 번 쓰는데, Cloudflare Worker 는 요청 하나에 바깥 요청 50번이 한계다.
-   → 24장부터 503 이 떨어져 그 묶음이 홈페이지에서 아예 안 열린다 (목록에서 실제로 확인함).
-   여유를 두고 20장에서 끊는다. 이 숫자를 올리려면 Worker 가 서명을 한 번에 모아 하도록
-   먼저 고쳐야 한다. */
-const CMS_ALBUM_MAX=20;
+/* 한 묶음에 넣을 수 있는 사진 수.
+   ★ 2026-08-13 Worker 가 사진 주소를 한 번에 모아 서명하도록 바뀌면서 원래 있던
+     20장 한도(사진 1장마다 바깥 요청 2번 → Cloudflare 50번 한계에 걸림)는 사라졌다.
+     사진이 500장이어도 Worker 는 바깥 요청 5번만 쓴다(실측).
+   지금 남은 기준은 한 번에 고를 수 있는 사진 수(120장)와 같게 맞춘 것뿐이다. */
+const CMS_ALBUM_MAX=120;
 
 /* 묶음 합치기 — 고른 묶음들을 하나로 모은다.
    ⚠ 서버가 사진을 다른 묶음으로 옮겨주지 못한다 (asset PATCH 가 role·sort_order 만 받는다).
@@ -34,10 +33,12 @@ function cmsGalleryTogglePick(id){
 function cmsGalleryClearPick(){ cmsMergePick={}; cmsMergeDraft=null; render(); }
 
 /* 사진 1장을 다른 묶음으로 옮긴다. 내려받은 최적화본(2000px webp)을 다시 올린다.
-   원본까지는 못 가져온다 — 서버가 원본 주소를 내주지 않는다. */
+   원본까지는 못 가져온다 — 서버가 원본 주소를 내주지 않는다.
+   ⚠ 썸네일(640px)로 대신하지 말 것. 예전 Worker 가 image_url 을 안 줘서 썸네일로 흘러갔고,
+     합친 사진이 조용히 저화질이 됐다. 큰 사진 주소가 없으면 차라리 실패시킨다. */
 async function cmsMergeCopyPhoto(asset, targetId, sortOrder){
-  const url=asset&&(asset.image_url||asset.optimized_url||asset.preview_url||asset.thumbnail_url);
-  if(!url) throw new Error('사진 주소를 찾지 못했어요');
+  const url=asset&&(asset.image_url||asset.optimized_url);
+  if(!url) throw new Error('큰 사진 주소를 못 받았어요 (Worker가 옛 버전이면 이 오류가 납니다)');
   const r=await fetch(url);
   if(!r.ok) throw new Error('사진을 내려받지 못했어요 ('+r.status+')');
   const blob=await r.blob();
@@ -324,7 +325,7 @@ function cmsRenderPhotoGallery(){
           <div style="min-width:220px;flex:1">
             <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-mute);margin-bottom:5px;cursor:pointer">
               <input type="checkbox" class="cmsAlbumPick" data-id="${safeId}" ${picked?'checked':''} style="width:18px;height:18px;margin:0">
-              <span>사진 묶음 · ${assets.length}/${CMS_ALBUM_MAX}장${assets.length>=CMS_ALBUM_MAX?' · 가득 참':''}</span>
+              <span>사진 묶음 · ${assets.length}장${assets.length>=CMS_ALBUM_MAX?' · 가득 참':''}</span>
             </label>
             <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(150px,1fr);gap:8px">
               <input id="cmsAlbumTitle_${safeId}" value="${esc(title)}" maxlength="200" placeholder="사진 묶음 이름">
