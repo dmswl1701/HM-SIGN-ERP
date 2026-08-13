@@ -136,6 +136,24 @@ function cmsMergeUpdateProgress(){
   if(b) b.style.width=(M.total?Math.round((M.done+M.failed)/M.total*100):0)+'%';
 }
 
+/* 이 묶음이 홈페이지에서 "드래그 비교"로 보일 조건을 갖췄는지 알려준다.
+   홈페이지(site.js buildCompare)는 한 묶음에 role=before 사진과 role=after 사진이
+   둘 다 있을 때만 비교 슬라이더를 만든다. 조건을 반만 채우면 아무것도 안 나오는데,
+   화면에 아무 말도 없으면 왜 안 나오는지 알 방법이 없다.
+   ⚠ 시공 전·후는 묶음당 한 장씩이다 — 서버가 새로 지정하면 이전 것을 '현장'으로 내린다. */
+function cmsGalleryCompareNote(assets){
+  const list=assets||[];
+  const before=list.filter(a=>a.role==='before').length;
+  const after=list.filter(a=>a.role==='after').length;
+  if(before&&after) return `<div class="aic-dm-ok" style="margin-top:10px;font-size:12.5px">
+    ✅ <b>홈페이지 시공사례 맨 위에 드래그 비교로 나타납니다.</b> 손님이 손잡이를 끌어 전·후를 봅니다.</div>`;
+  if(before||after) return `<div class="aic-dm-warn" style="margin-top:10px;font-size:12.5px">
+    <b>${before?'시공 전':'시공 후'}</b>만 지정돼 있어요. <b>${before?'시공 후':'시공 전'}</b>도 한 장 골라야 드래그 비교가 생깁니다.</div>`;
+  if(list.length>=2) return `<div class="aic-sub" style="margin-top:10px;font-size:12px">
+    사진 두 장을 <b>시공 전</b> · <b>시공 후</b>로 지정하면 홈페이지에 드래그 비교가 생깁니다.</div>`;
+  return '';
+}
+
 function cmsGalleryCategoryOf(p){
   return String((p&&(p.category||p.industry))||'').trim();
 }
@@ -341,13 +359,19 @@ function cmsRenderPhotoGallery(){
             <button type="button" class="aic-btn aic-btn-rej cmsAlbumDelete" data-id="${safeId}">묶음 삭제</button>
           </div>
         </div>
+        ${cmsGalleryCompareNote(assets)}
         ${assets.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px;margin-top:12px">${assets.map(a=>{
           const src=a.preview_url||a.thumbnail_url||a.image_url||a.optimized_url||a.public_url||a.url||'';
           if(!src) return '';
+          const role=String(a.role||'gallery');
           return `<div style="position:relative;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#fff">
             <button type="button" class="cmsGalleryPreview" data-pid="${safeId}" data-aid="${esc(a.id)}" style="display:block;width:100%;padding:0;border:0;background:#eef1f5;cursor:pointer;aspect-ratio:1">
               <img src="${esc(src)}" alt="${esc(title)}" style="width:100%;height:100%;object-fit:cover;display:block">
             </button>
+            <select class="cmsPhotoRole" data-pid="${safeId}" data-aid="${esc(a.id)}" title="이 사진이 무엇인지 고르세요"
+              style="width:100%;border:0;border-top:1px solid var(--border);border-radius:0;padding:6px;font-size:12px;background:${role==='before'||role==='after'?'#eef5ff':'#fff'};font-weight:${role==='before'||role==='after'?'700':'400'}">
+              ${CMS_ROLE_CHOICES.map(c=>`<option value="${c.key}" ${role===c.key?'selected':''}>${esc(c.label)}</option>`).join('')}
+            </select>
             <button type="button" class="cmsGalleryDelete aic-btn aic-btn-rej" data-pid="${safeId}" data-aid="${esc(a.id)}" style="width:100%;border-radius:0;border-width:1px 0 0;padding:6px 7px">삭제</button>
           </div>`;
         }).join('')}</div>`:'<div class="aic-sub" style="margin-top:10px">아직 사진이 없어요.</div>'}
