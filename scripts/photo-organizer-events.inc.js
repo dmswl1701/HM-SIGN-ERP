@@ -5,6 +5,17 @@
   document.querySelectorAll('.cmsAlbumAddInput').forEach(el=>el.addEventListener('change',e=>{
     const f=[...e.target.files]; e.target.value=''; cmsGalleryAddFiles(el.dataset.id,f);
   }));
+  document.querySelectorAll('.cmsPhotoOpen').forEach(el=>el.addEventListener('click',()=>cmsPhotoOpen(el.dataset.pid, el.dataset.aid)));
+  const cpc=document.getElementById('cmsPhotoCloseBtn');
+  if(cpc) cpc.addEventListener('click',cmsPhotoClose);
+  const cps=document.getElementById('cmsPhotoSave');
+  if(cps) cps.addEventListener('click',cmsPhotoSaveEdit);
+  document.querySelectorAll('.cmsPhotoSetRole').forEach(el=>el.addEventListener('click',async()=>{
+    el.disabled=true;
+    await cmsAssetRole(el.dataset.pid, el.dataset.aid, el.dataset.role);
+    el.disabled=false;
+    render();
+  }));
   document.querySelectorAll('.cmsPhotoRole').forEach(el=>el.addEventListener('change',async()=>{
     const prev=el.dataset.was||'';
     el.disabled=true;

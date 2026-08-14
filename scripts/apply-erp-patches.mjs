@@ -80,7 +80,7 @@ const groupedUpload=String.raw`async function cmsGalleryUploadFiles(fileList){
         const i=cursor++; if(i>=valid.length) return;
         const file=valid[i];
         try{
-          await cmsUploadAsset(albumId,file,i===0?'cover':'gallery',i);
+          await cmsUploadAssetRetry(albumId,file,i===0?'cover':'gallery',i);
           G.done++;
         }catch(e){
           G.failed++;
@@ -136,7 +136,7 @@ function replaceOnce(from,to,label){
   text=text.replace(from,to);
 }
 
-replaceOnce("const APP_BUILD = 'V56.0812.MISSINGROW';","const APP_BUILD = 'V63.0813.BEFOREAFTER';",'build version');
+replaceOnce("const APP_BUILD = 'V56.0812.MISSINGROW';","const APP_BUILD = 'V64.0813.ONEPHOTOSCREEN';",'build version');
 replaceOnce('function renderWebsiteAdmin(){',helpers+'\nfunction renderWebsiteAdmin(){','gallery helpers');
 replaceOnce(
   "  if(tab==='portfolio'){\n    const list=Array.isArray(cmsPortfolios)?cmsPortfolios:[];\n    const sites=(state.quotes||[]).filter(q=>q.status==='시공완료'||q.status==='계약');",

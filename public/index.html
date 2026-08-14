@@ -10063,7 +10063,9 @@ function render(){
   else if(state.view==='aicompany') html = renderAICompany();
   else if(state.view==='airesults') html = renderAiResults();
   else if(state.view==='website') html = renderWebsiteAdmin();
-  else if(state.view==='photoup') html = renderPhotoUpload();
+  // 📸 현장사진 올리기 = 홈페이지 관리의 사진 탭. 사진 올리는 곳이 두 군데라 헷갈린다는
+  // 대표 지적에 따라 한 화면으로 합쳤다. 메뉴는 폰에서 한 번에 들어가는 지름길로 남긴다.
+  else if(state.view==='photoup'){ state.cmsTab='portfolio'; html = renderWebsiteAdmin(); }
   else if(state.view==='clients') html = state.detailClientId? renderClientDetail() : renderClients();
   else if(state.view==='items') html = renderItems();
   else if(state.view==='pay') html = renderPay();
