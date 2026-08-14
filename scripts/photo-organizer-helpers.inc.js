@@ -356,10 +356,16 @@ let cmsPhotoEdit=null;   // {pid, aid}
 function cmsPhotoFlat(){
   const out=[];
   (cmsPortfolios||[]).forEach(p=>{
+    let added=0;
     (cmsAssets[p.id]||[]).forEach(a=>{
       const src=a.preview_url||a.thumbnail_url||a.image_url||a.optimized_url||a.public_url||a.url||'';
-      if(src) out.push({album:p, asset:a, src});
+      if(src){ out.push({album:p, asset:a, src}); added++; }
     });
+    /* 사진을 아직 못 받아온 현장도 자리를 남긴다.
+       ⚠ 이걸 빼면 화면이 통째로 비어 "사진이 하나도 없다"로 보인다 —
+         사진 목록은 현장마다 따로 불러오므로 느리거나 실패하면 흔히 일어난다.
+         자리를 남겨두면 그동안에도 이름·분류를 고칠 수 있다. */
+    if(!added) out.push({album:p, asset:null, src:''});
   });
   return out;
 }
@@ -398,10 +404,10 @@ function cmsRenderPhotoGallery(){
      왼쪽 위 네모는 "합치기" 고르기용이고, 사진이 속한 묶음을 고른다. */
   const tiles=flat.map(item=>{
     const p=item.album, a=item.asset;
-    const role=String(a.role||'gallery');
+    const role=a?String(a.role||'gallery'):'';
     const marked=(role==='before'||role==='after');
     const picked=!!cmsMergePick[p.id];
-    const open=cmsPhotoEdit&&cmsPhotoEdit.aid===a.id;
+    const open=cmsPhotoEdit&&(a?cmsPhotoEdit.aid===a.id:(!cmsPhotoEdit.aid&&cmsPhotoEdit.pid===p.id));
     const name=String(p.title||'').trim();
     const unnamed=(!name||name==='시공사진');
     return `<div style="position:relative;border:1px solid ${open?'var(--navy)':'var(--border)'};border-width:${open?'2px':'1px'};border-radius:10px;overflow:hidden;background:#fff${picked?';outline:2px solid var(--navy);outline-offset:-2px':''}">
@@ -409,9 +415,10 @@ function cmsRenderPhotoGallery(){
         <input type="checkbox" class="cmsAlbumPick" data-id="${esc(p.id)}" ${picked?'checked':''} style="width:16px;height:16px;margin:0">
       </label>
       ${marked?`<span style="position:absolute;z-index:2;right:6px;top:6px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:6px;padding:3px 6px">${esc(cmsPhotoRoleLabel(role))}</span>`:''}
-      <button type="button" class="cmsPhotoOpen" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}"
+      <button type="button" class="cmsPhotoOpen" data-pid="${esc(p.id)}" data-aid="${a?esc(a.id):''}"
         style="display:block;width:100%;padding:0;border:0;background:#eef1f5;cursor:pointer;aspect-ratio:1">
-        <img src="${esc(item.src)}" alt="${esc(name||'시공사진')}" style="width:100%;height:100%;object-fit:cover;display:block">
+        ${a?`<img src="${esc(item.src)}" alt="${esc(name||'시공사진')}" style="width:100%;height:100%;object-fit:cover;display:block">`
+           :`<span style="display:grid;place-items:center;width:100%;height:100%;color:var(--text-mute);font-size:11.5px;line-height:1.5;padding:8px;text-align:center">사진 불러오는 중<br>또는 사진 없음</span>`}
       </button>
       <div style="padding:6px 8px 7px;font-size:11.5px;line-height:1.35;color:${unnamed?'#b3792c':'var(--text)'};font-weight:${unnamed?'700':'500'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         ${unnamed?'이름 없음':esc(name)}
@@ -422,16 +429,19 @@ function cmsRenderPhotoGallery(){
   /* 편집 패널 — 사진을 눌렀을 때만 나온다. */
   let editPanel='';
   if(cmsPhotoEdit){
-    const hit=flat.filter(x=>x.asset.id===cmsPhotoEdit.aid)[0];
+    const hit=cmsPhotoEdit.aid
+      ? flat.filter(x=>x.asset && x.asset.id===cmsPhotoEdit.aid)[0]
+      : flat.filter(x=>x.album.id===cmsPhotoEdit.pid)[0];
     if(!hit){ cmsPhotoEdit=null; }
     else{
       const p=hit.album, a=hit.asset;
       const assets=cmsAssets[p.id]||[];
-      const role=String(a.role||'gallery');
-      const big=a.image_url||a.optimized_url||hit.src;
+      const role=a?String(a.role||'gallery'):'';
+      const big=a?(a.image_url||a.optimized_url||hit.src):'';
       editPanel=`<div class="panel" style="border-color:var(--navy);margin-bottom:12px">
         <div style="display:flex;gap:14px;flex-wrap:wrap">
-          <img src="${esc(big)}" alt="" style="width:190px;height:190px;object-fit:cover;border-radius:10px;background:#eef1f5;flex:0 0 auto">
+          ${big?`<img src="${esc(big)}" alt="" style="width:190px;height:190px;object-fit:cover;border-radius:10px;background:#eef1f5;flex:0 0 auto">`
+               :`<div style="width:190px;height:190px;display:grid;place-items:center;border-radius:10px;background:#eef1f5;color:var(--text-mute);font-size:12px;flex:0 0 auto;text-align:center;line-height:1.6">사진을 아직<br>불러오지 못했어요</div>`}
           <div style="flex:1;min-width:230px">
             <div class="field" style="margin:0 0 8px">
               <label>현장 이름</label>
@@ -441,11 +451,11 @@ function cmsRenderPhotoGallery(){
               <label>분류</label>
               <input type="text" id="cmsPhotoCategory" list="cmsGalleryCategoryList" maxlength="100" value="${esc(cmsGalleryCategoryOf(p))}" placeholder="예: 셀프빨래방">
             </div>
-            <label style="display:block;font-size:12px;color:var(--text-mute);margin-bottom:5px">이 사진은</label>
+            ${a?`<label style="display:block;font-size:12px;color:var(--text-mute);margin-bottom:5px">이 사진은</label>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
               ${CMS_ROLE_CHOICES.map(c=>`<button type="button" class="aic-btn cmsPhotoSetRole" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}" data-role="${c.key}"
                 style="${role===c.key?'background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700':''}">${esc(c.label)}</button>`).join('')}
-            </div>
+            </div>`:''}
             ${assets.length>1?`<div class="aic-sub" style="margin-bottom:10px;font-size:12px">
               이 현장에 사진 <b>${assets.length}장</b>이 묶여 있어요. 이름·분류를 바꾸면 <b>${assets.length}장 전부</b>에 적용됩니다.</div>`:''}
             ${cmsGalleryCompareNote(assets)}
@@ -454,7 +464,8 @@ function cmsRenderPhotoGallery(){
               <label class="aic-btn" style="cursor:pointer">＋ 이 현장에 사진 추가
                 <input type="file" class="cmsAlbumAddInput" data-id="${esc(p.id)}" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
               </label>
-              <button type="button" class="aic-btn aic-btn-rej cmsGalleryDelete" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}">이 사진 삭제</button>
+              ${a?`<button type="button" class="aic-btn aic-btn-rej cmsGalleryDelete" data-pid="${esc(p.id)}" data-aid="${esc(a.id)}">이 사진 삭제</button>`
+                 :`<button type="button" class="aic-btn aic-btn-rej cmsAlbumDelete" data-id="${esc(p.id)}">이 현장 삭제</button>`}
               <button type="button" class="aic-btn" id="cmsPhotoCloseBtn">닫기</button>
             </div>
           </div>
