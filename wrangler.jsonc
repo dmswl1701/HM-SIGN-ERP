@@ -11,7 +11,7 @@
 
   // 원본 대형 index.html 은 통째로 덮어쓰지 않고, 배포 직전에 홈페이지 사진 화면만 정확히 패치합니다.
   "build": {
-    "command": "node scripts/apply-erp-patches.mjs"
+    "command": "node scripts/apply-erp-patches.mjs && node scripts/apply-photo-sync-v70.mjs"
   },
 
   "assets": {
