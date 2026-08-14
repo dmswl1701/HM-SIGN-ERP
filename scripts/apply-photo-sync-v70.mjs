@@ -21,6 +21,14 @@ replaceOnce('function renderWebsiteAdmin(){',marker+'\n'+sync+'\nfunction render
 
 // 직원이 실제로 누르는 말만 단순하게 정리한다. 기능은 그대로 유지한다.
 text=text.replace(
+  '<b style="color:var(--navy)">묶음 ${picks.length}개 선택됨 · 사진 ${pickPhotos}장</b>',
+  '<b style="color:var(--navy)">선택 ${picks.length}개 · 사진 ${pickPhotos}장</b>'
+);
+text=text.replace(
+  '맨 위에 있는 <b>「${esc(picks[0].title||\'제목 없음\')}」</b>에 나머지 사진을 모읍니다. 옮긴 묶음은 사라집니다.',
+  '아래에서 <b>현장 이름</b>과 <b>분류</b>를 정하고 적용하세요. 사진 자체를 합치고 싶을 때만 [한 현장으로 합치기]를 누르면 됩니다.'
+);
+text=text.replace(
   ">${picks.length}개 이름만 바꾸기</button>",
   ">${picks.length}개에 이름·분류 적용</button>"
 );
