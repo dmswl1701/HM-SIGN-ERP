@@ -6652,7 +6652,8 @@ async function cmsFetchRaw(path, opts){
   // FormData 는 브라우저가 boundary 를 포함해 직접 설정해야 하므로 content-type 을 지정하지 않는다
   const isForm = (typeof FormData!=='undefined') && (opts.body instanceof FormData);
   if(opts.body && !isForm && !headers['content-type']) headers['content-type']='application/json';
-  return fetch(CMS_API+path, {method:opts.method||'GET', headers, body:opts.body});
+  const method=opts.method||'GET';
+  return fetch(CMS_API+path, {method, headers, body:opts.body, cache:method==='GET'?'no-store':'no-cache'});
 }
 /* 어떤 콘텐츠 키가 실제로 존재하는지 확인 */
 async function cmsDiscoverKeys(){
@@ -6912,18 +6913,10 @@ async function cmsLoadAll(){
     cmsData.services = cmsAsArray(cmsData.services);
     cmsData.process = cmsAsArray(cmsData.process);
 
-    // 문의함
+    // 홈페이지 문구 화면을 여는 데 문의/시공사진 전체를 기다리지 않는다.
+    // 무거운 데이터는 해당 탭을 눌렀을 때만 불러온다.
     cmsInquiries = null;
-    try{
-      const r = await cmsFetchRaw(CMS_BASE+'/inquiries');
-      if(r.status===200) cmsInquiries = await r.json();
-    }catch(e){}
-    // 시공사례 + 사진
-    try{ await cmsLoadPortfolios(); }catch(e){}
-    // 사진첩이 아직 안 불러와졌으면 준비 (시공사례에서 바로 올릴 수 있도록)
-    if(state.gallery===null && !state.galleryLoading && typeof loadGallery==='function'){
-      state.galleryLoading=true; setTimeout(loadGallery, 10);
-    }
+    cmsPortfolios = null;
     state.cmsErr = null;
   }catch(e){
     state.cmsErr = e.message;
@@ -7162,18 +7155,27 @@ async function cmsLoadPortfolios(){
      그 시간이 그대로 쌓여 화면이 한참 안 뜬다 — 홈페이지 관리가 느렸던 이유가 이것이다.
      순서는 상관없으므로 여러 개를 동시에 받는다. 한 번에 다 던지지 않는 이유는
      휴대폰 브라우저의 동시 연결 수가 적어 오히려 줄을 서기 때문이다. */
-  await cmsPoolRun(cmsPortfolios, 6, p=>cmsRefreshAssets(p.id));
+  // 프로젝트 목록은 먼저 보여주고 사진은 뒤에서 채운다.
+  // 사진 수가 많아져도 홈페이지 관리 첫 화면이 이 요청들을 기다리지 않는다.
+  cmsPoolRun(cmsPortfolios, 4, p=>cmsRefreshAssets(p.id))
+    .then(()=>{ if(state.view==='website' && state.cmsTab==='portfolio') render(); })
+    .catch(()=>{});
 
   // 예전 한글 slug 프로젝트는 직원이 버튼을 누르지 않아도 관리자 화면을 여는 순간
   // ASCII 고정 slug로 한 번만 조용히 마이그레이션한다. 기존 공개 상태/사진은 그대로 유지된다.
   const migrate=cmsPortfolios.filter(cmsPortfolioSlugNeedsMigration);
-  for(const p of migrate){
-    const before=p.slug||'';
-    cmsPortfolioSlug(p);
-    const ok=await cmsSavePortfolio(p.id,{silent:true,noRender:true});
-    if(!ok) p.slug=before;
+  if(migrate.length){
+    // 예전 slug 정리는 필요하지만 목록 표시를 막을 이유는 없다. 뒤에서 한 번씩 정리한다.
+    (async()=>{
+      for(const p of migrate){
+        const before=p.slug||'';
+        cmsPortfolioSlug(p);
+        const ok=await cmsSavePortfolio(p.id,{silent:true,noRender:true});
+        if(!ok) p.slug=before;
+      }
+      cmsPortfolioDraftsSave();
+    })().catch(()=>{});
   }
-  if(migrate.length) cmsPortfolioDraftsSave();
 }
 async function cmsSavePortfolio(id, opts){
   opts=opts||{};
@@ -7695,7 +7697,7 @@ function cmsAutoRoleBuckets(g){
     ph.forEach((p,i)=>{
       if(i<cut) out.before.push(p.file);
       else if(i>=n-cut) out.after.push(p.file);
-      else out.progress.push(p.file);
+      else out.gallery.push(p.file); // progress role은 배포 Worker 지원 확인 전까지 안전하게 현장사진으로 저장
     });
     // 목록 대표사진은 완성된 모습이 좋다. 다만 '시공 후'가 한 장뿐일 때 그걸 대표로 빼버리면
     // 홈페이지의 시공 전/후 드래그 비교가 사라지므로, 그때는 과정 사진에서 대표를 고른다.
@@ -7900,9 +7902,14 @@ async function cmsAssetRole(portfolioId,assetId,role,opts){
       method:'PATCH',body:JSON.stringify({role})
     });
     if(r.status>=200&&r.status<300){
-      await cmsRefreshAssets(portfolioId);
-      if(!opts.silent) toast('사진 분류를 바꿨어요','ok');
-      return true;
+      const fresh=await cmsRefreshAssets(portfolioId);
+      const saved=(fresh||[]).find(x=>String(x.id)===String(assetId));
+      if(saved && String(saved.role||'').toLowerCase()===String(role||'').toLowerCase()){
+        if(!opts.silent) toast('사진 분류를 바꿨어요','ok');
+        return true;
+      }
+      toast('서버 응답은 왔지만 분류가 실제 저장되지 않았어요. 다시 시도해 주세요','warn');
+      return false;
     }
     let m=''; try{m=(await r.text()).slice(0,140);}catch(e){}
     toast('변경 실패 ('+r.status+') '+m,'warn');
@@ -8483,7 +8490,7 @@ function renderWebsiteAdmin(){
                올릴 때 이미 '시공 전/후'가 정해진다. -->
           <div class="cms-upload-roles">
             ${[{r:'before',t:'시공 전 사진'},{r:'after',t:'시공 후 사진'},
-               {r:'progress',t:'과정 사진'},{r:'gallery',t:'현장 사진'}].map(x=>`
+               {r:'gallery',t:'과정·현장 사진'}].map(x=>`
               <label class="cms-upload-role" data-r="${x.r}">
                 <b>+ ${x.t}</b><span>여러 장 선택</span>
                 <input type="file" class="cmsAssetStage" data-id="${esc(p.id)}" data-role="${x.r}"
@@ -8880,7 +8887,33 @@ function bindWebsiteAdmin(){
   if(pb) pb.addEventListener('click', ()=>cmsRunProbe());
 
   // 탭
-  document.querySelectorAll('.cmsTab').forEach(el=> el.addEventListener('click', ()=>{ state.cmsTab=el.dataset.t; render(); }));
+  document.querySelectorAll('.cmsTab').forEach(el=> el.addEventListener('click', async()=>{
+    const t=el.dataset.t;
+    state.cmsTab=t;
+    render();
+
+    // 문의함/시공사례는 실제로 볼 때만 네트워크를 사용한다.
+    if(t==='portfolio' && cmsPortfolios===null && !state.cmsPortfolioLoading){
+      state.cmsPortfolioLoading=true;
+      try{ await cmsLoadPortfolios(); }
+      catch(e){ state.cmsErr='시공사례를 불러오지 못했습니다: '+e.message; }
+      finally{
+        state.cmsPortfolioLoading=false;
+        if(state.cmsTab==='portfolio') render();
+      }
+    }
+    if(t==='inquiry' && cmsInquiries===null && !state.cmsInquiryLoading){
+      state.cmsInquiryLoading=true;
+      try{
+        const r=await cmsFetchRaw(CMS_BASE+'/inquiries');
+        if(r.status===200) cmsInquiries=await r.json();
+      }catch(e){ state.cmsErr='문의함을 불러오지 못했습니다: '+e.message; }
+      finally{
+        state.cmsInquiryLoading=false;
+        if(state.cmsTab==='inquiry') render();
+      }
+    }
+  }));
 
   // 단순 필드 (blur 시 반영 — 입력 중 리렌더 방지)
   document.querySelectorAll('.cmsIn').forEach(el=> el.addEventListener('change', ()=>{ cmsSet(el.dataset.p, el.value); }));
