@@ -49,6 +49,36 @@ async function cmsMergeCopyPhoto(asset, targetId, sortOrder){
   await cmsUploadAsset(targetId, file, 'gallery', sortOrder);
 }
 
+/* 고른 것들의 이름·분류만 한꺼번에 바꾼다. 사진은 건드리지 않는다.
+   합치기와 다른 점: 합치기는 사진을 내려받아 다시 올리므로 장수만큼 시간이 걸리지만,
+   이름만 바꾸는 것은 현장 하나당 저장 한 번이라 즉시 끝난다.
+   같은 현장이 아니라 "같은 이름으로 정리만" 하고 싶을 때 쓴다. */
+async function cmsGalleryRenamePicked(){
+  const picked=cmsMergePicked();
+  if(!picked.length){ toast('먼저 사진을 골라 주세요','warn'); return; }
+  const t=document.getElementById('cmsMergeTitle');
+  const c=document.getElementById('cmsMergeCategory');
+  const title=String((t&&t.value)||'').trim().slice(0,200);
+  const category=String((c&&c.value)||'').trim().slice(0,100);
+  if(!title){ toast('바꿀 이름을 입력해 주세요','warn'); if(t)t.focus(); return; }
+  if(!confirm('고른 '+picked.length+'개를 모두 「'+title+'」로 바꿀까요?\n\n'
+    +'· 사진은 그대로 있고 이름'+(category?'·분류':'')+'만 바뀝니다\n'
+    +'· 카드는 합쳐지지 않고 '+picked.length+'개로 남습니다')) return;
+  let done=0, failed=0;
+  try{
+    cmsWakeOn();
+    for(const p of picked){
+      try{ await cmsGalleryPutAlbum(p,{title,category}); done++; }
+      catch(e){ failed++; }
+    }
+    await cmsLoadPortfolios();
+    cmsPortfolioDraftsSave();
+  }finally{ cmsWakeOff(); cmsMergePick={}; cmsMergeDraft=null; }
+  if(failed) toast(done+'개 바꿈 · '+failed+'개 실패','warn');
+  else{ toast(done+'개를 「'+title+'」로 바꿨어요','ok'); logActivity('홈페이지 사진 이름 일괄 변경: '+title+' ('+done+'개)','변경'); }
+  render();
+}
+
 async function cmsGalleryMergeAlbums(){
   if(cmsMergeState&&cmsMergeState.running) return;
   const picked=cmsMergePicked();
@@ -592,8 +622,13 @@ function cmsRenderPhotoGallery(){
           <input type="text" id="cmsMergeCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류" value="${esc(cmsMergeDraft?cmsMergeDraft.category:cmsGalleryCategoryOf(picks[0]))}">
         </div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button type="button" class="aic-btn" id="cmsRenamePicked" style="background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700">${picks.length}개 이름만 바꾸기</button>
           <button type="button" class="aic-btn" id="cmsMergeRun" ${(picks.length<2||pickOver)?'disabled':''}>${picks.length}개를 하나로 합치기</button>
           <button type="button" class="aic-btn" id="cmsMergeClear">선택 해제</button>
+        </div>
+        <div class="aic-sub" style="margin-top:8px;font-size:11.5px;line-height:1.65">
+          <b>이름만 바꾸기</b> — 카드는 ${picks.length}개로 남고 이름·분류만 같아집니다. <b>즉시 끝납니다.</b><br>
+          <b>하나로 합치기</b> — 카드 한 개로 모읍니다. 사진을 옮기느라 장수만큼 시간이 걸립니다.
         </div>
       </div>`:'')}
     ${editPanel}

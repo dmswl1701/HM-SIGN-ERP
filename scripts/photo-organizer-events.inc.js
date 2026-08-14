@@ -28,6 +28,8 @@
   }));
   document.querySelectorAll('.cmsPhotoRole').forEach(el=>{ el.dataset.was=el.value; });
   document.querySelectorAll('.cmsAlbumPick').forEach(el=>el.addEventListener('change',()=>cmsGalleryTogglePick(el.dataset.id)));
+  const crp=document.getElementById('cmsRenamePicked');
+  if(crp) crp.addEventListener('click',cmsGalleryRenamePicked);
   const cmr=document.getElementById('cmsMergeRun');
   if(cmr) cmr.addEventListener('click',cmsGalleryMergeAlbums);
   const cmc=document.getElementById('cmsMergeClear');

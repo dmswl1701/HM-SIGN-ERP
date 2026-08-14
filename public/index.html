@@ -7113,6 +7113,23 @@ const CMS_ROLE_CHOICES=[
   {key:'gallery', label:'현장',    hint:'그 밖의 현장 사진'}
 ];
 
+/* 여러 개를 한꺼번에, 그러나 동시에 너무 많이는 하지 않는다.
+   size 개씩 굴러가며 끝나는 대로 다음 것을 집는다. 하나가 실패해도 나머지는 계속한다. */
+async function cmsPoolRun(items, size, fn){
+  const list=[...(items||[])];
+  let cursor=0;
+  const worker=async()=>{
+    while(true){
+      const i=cursor++;
+      if(i>=list.length) return;
+      try{ await fn(list[i], i); }catch(e){}
+    }
+  };
+  const lanes=[];
+  for(let i=0;i<Math.max(1,Math.min(size,list.length));i++) lanes.push(worker());
+  await Promise.all(lanes);
+}
+
 async function cmsRefreshAssets(portfolioId){
   try{
     const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+portfolioId+'/assets');
@@ -7141,7 +7158,11 @@ async function cmsLoadPortfolios(){
   remote.map(cmsPortfolioNormalize).forEach(p=>byId.set(p.id,p));
   cmsPortfolioDraftsLoad().map(cmsPortfolioNormalize).forEach(p=>{ if(!byId.has(p.id)) byId.set(p.id,p); });
   cmsPortfolios=[...byId.values()];
-  for(const p of cmsPortfolios) await cmsRefreshAssets(p.id);
+  /* 사진 목록은 현장마다 따로 받아야 한다. 40곳이면 요청 40번인데, 하나씩 기다리면
+     그 시간이 그대로 쌓여 화면이 한참 안 뜬다 — 홈페이지 관리가 느렸던 이유가 이것이다.
+     순서는 상관없으므로 여러 개를 동시에 받는다. 한 번에 다 던지지 않는 이유는
+     휴대폰 브라우저의 동시 연결 수가 적어 오히려 줄을 서기 때문이다. */
+  await cmsPoolRun(cmsPortfolios, 6, p=>cmsRefreshAssets(p.id));
 
   // 예전 한글 slug 프로젝트는 직원이 버튼을 누르지 않아도 관리자 화면을 여는 순간
   // ASCII 고정 slug로 한 번만 조용히 마이그레이션한다. 기존 공개 상태/사진은 그대로 유지된다.
