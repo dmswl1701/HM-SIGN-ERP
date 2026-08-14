@@ -213,9 +213,26 @@ async function cmsGalleryPutAlbum(p,overrides={}){
   const payload=cmsGalleryAlbumPayload(p,overrides);
   const r=await cmsFetchRaw(CMS_BASE+'/portfolios/'+p.id,{method:'PUT',body:JSON.stringify(payload)});
   if(!(r.status>=200&&r.status<300)){
-    let m=''; try{m=(await r.text()).replace(/\s+/g,' ').slice(0,120);}catch(e){}
-    throw new Error('사진 묶음 저장 실패 ('+r.status+')'+(m?' '+m:''));
+    let m=''; try{m=(await r.text()).replace(/\s+/g,' ').slice(0,200);}catch(e){}
+    /* 실패를 토스트로만 알리면 몇 초 뒤 사라져 원인을 못 본다.
+       화면에 남는 자리(state.cmsErr)에 보낸 값까지 함께 적어 둔다 —
+       이름이 안 바뀐다는 신고를 받고도 이유를 알 수 없었던 게 이것 때문이다. */
+    state.cmsErr='사진 묶음 저장 실패 ('+r.status+') '+m;
+    state.cmsSaveTried=[
+      'PUT '+CMS_BASE+'/portfolios/'+p.id,
+      '보낸 값: '+JSON.stringify(payload).slice(0,300),
+      '서버 응답: '+(m||'(내용 없음)')
+    ];
+    throw new Error('저장 실패 ('+r.status+') '+m);
   }
+  /* ★ 서버에 저장한 값을 메모리에도 반영한다.
+     안 하면 화면·localStorage 초안이 옛 이름을 그대로 들고 있다가
+     다음 새로고침 때 서버 값을 덮어써서 "바꿨는데 안 바뀐다"가 된다. */
+  p.title=payload.title;
+  p.category=payload.industry;
+  p.industry=payload.industry;
+  p.slug=payload.slug;
+  p.status=payload.status;
   return payload;
 }
 /* 편집 패널의 [저장] — 사진이 속한 현장의 이름·분류를 저장한다. */
