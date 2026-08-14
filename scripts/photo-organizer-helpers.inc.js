@@ -649,9 +649,19 @@ function cmsRenderPhotoGallery(){
           맨 위에 있는 <b>「${esc(picks[0].title||'제목 없음')}」</b>에 나머지 사진을 모읍니다. 옮긴 묶음은 사라집니다.
           ${pickOver?`<br><span style="color:#b33;font-weight:700">사진이 ${pickPhotos}장이라 한 묶음 한도(${CMS_ALBUM_MAX}장)를 넘습니다. 묶음을 몇 개 빼 주세요.</span>`:''}
         </div>
-        <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(140px,1fr);gap:8px;margin-bottom:9px">
-          <input type="text" id="cmsMergeTitle" maxlength="200" placeholder="합친 뒤 이름" value="${esc(cmsMergeDraft?cmsMergeDraft.title:(picks[0].title||''))}">
-          <input type="text" id="cmsMergeCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류" value="${esc(cmsMergeDraft?cmsMergeDraft.category:cmsGalleryCategoryOf(picks[0]))}">
+        <div style="display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(140px,1fr);gap:8px;margin-bottom:7px">
+          <input type="text" id="cmsMergeTitle" maxlength="200" placeholder="바꿀 이름" value="${esc(cmsMergeDraft?cmsMergeDraft.title:(picks[0].title||''))}">
+          <input type="text" id="cmsMergeCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="분류 — 아래에서 고르세요" value="${esc(cmsMergeDraft?cmsMergeDraft.category:cmsGalleryCategoryOf(picks[0]))}">
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px">
+          ${(function(){
+            const cur=cmsMergeDraft?cmsMergeDraft.category:cmsGalleryCategoryOf(picks[0]);
+            return cmsPhotoAllCategories().map(c=>{
+              const on=(cur===c);
+              return `<button type="button" class="aic-btn cmsCatChip" data-for="merge" data-input="cmsMergeCategory" data-val="${esc(c)}"
+                style="padding:4px 9px;font-size:12px${on?';background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700':''}">${esc(c)}</button>`;
+            }).join('');
+          })()}
         </div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
           <button type="button" class="aic-btn" id="cmsRenamePicked" style="background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700">${picks.length}개 이름만 바꾸기</button>
