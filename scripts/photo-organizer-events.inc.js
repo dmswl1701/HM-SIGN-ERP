@@ -1,3 +1,5 @@
+  const grp=document.getElementById('cmsGalleryRepublish');
+  if(grp) grp.addEventListener('click',cmsGalleryRepublishAll);
   const cgn=document.getElementById('cmsGalleryNewCategory');
   if(cgn) cgn.addEventListener('click',cmsGalleryNewCategory);
   document.querySelectorAll('.cmsAlbumSave').forEach(el=>el.addEventListener('click',()=>cmsGalleryUpdateAlbum(el.dataset.id)));

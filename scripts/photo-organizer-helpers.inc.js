@@ -205,8 +205,37 @@ function cmsGalleryAlbumPayload(p,overrides={}){
     summary:String((p&&p.summary)||'').trim().slice(0,5000),
     materials:Array.isArray(p&&p.materials)?p.materials.slice(0,30):[],
     featured:Boolean(p&&p.featured),
-    status:['draft','review','published'].includes(p&&p.status)?p.status:'published'
+    /* ★★ 반드시 'published' 로 고정한다. p.status 를 따라가면 안 된다.
+       공개 목록 API는 status 를 안 내려준다. 그래서 `cmsPortfolioNormalize` 가
+       `p.status || 'draft'` 로 채우고, 로컬 초안에도 'draft' 가 저장된다.
+       그 값을 그대로 보내면 **이름을 고칠 때마다 그 현장이 비공개로 바뀌어 사이트에서 사라졌다.**
+       공개 현장이 38 → 25 → 20 으로 줄어든 원인이 이것이다(삭제가 아니라 숨김).
+       이 화면(홈페이지 사진)에 보이는 것은 모두 홈페이지에 내보낼 사진이므로 항상 공개다. */
+    status:'published'
   };
+}
+
+/* 위 버그로 이미 비공개가 된 현장을 되살린다.
+   서버에는 "전체 현장 목록" 라우트가 없어 밖에서 찾을 수 없다 —
+   ERP 가 들고 있는 목록(공개분 + 로컬 초안)을 그대로 다시 공개 처리한다. */
+async function cmsGalleryRepublishAll(){
+  const list=(cmsPortfolios||[]).slice();
+  if(!list.length){ toast('되살릴 현장이 없어요','warn'); return; }
+  if(!confirm('현장 '+list.length+'개를 모두 홈페이지에 다시 공개할까요?\n\n'
+    +'이름을 고칠 때마다 비공개로 바뀌던 문제로 사라진 현장을 되살립니다.\n사진은 건드리지 않습니다.')) return;
+  let done=0, failed=0, lastErr='';
+  try{
+    cmsWakeOn();
+    for(const p of list){
+      try{ await cmsGalleryPutAlbum(p,{}); done++; }
+      catch(e){ failed++; lastErr=String(e&&e.message||e); }
+    }
+    await cmsLoadPortfolios();
+    cmsPortfolioDraftsSave();
+  }finally{ cmsWakeOff(); }
+  if(failed){ state.cmsErr='다시 공개 실패 '+failed+'개 · 마지막 오류: '+lastErr; toast(done+'개 공개 · '+failed+'개 실패','warn'); }
+  else toast(done+'개를 다시 공개했어요','ok');
+  render();
 }
 async function cmsGalleryPutAlbum(p,overrides={}){
   if(!p||!p.id) throw new Error('사진 묶음 정보를 찾지 못했어요');
@@ -620,6 +649,11 @@ function cmsRenderPhotoGallery(){
           <input type="text" id="cmsGalleryCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="아래에서 고르거나 직접 입력">
         </div>
         <button type="button" class="aic-btn" id="cmsGalleryNewCategory">＋ 새 분류</button>
+      </div>
+      <div class="aic-dm-warn" style="margin:0 0 12px;line-height:1.7">
+        <b>사이트에서 사라진 현장이 있다면</b> 아래를 누르세요. 이름을 고칠 때마다 비공개로 바뀌던
+        문제가 있었습니다(2026-08-14 수정). 사진은 그대로 두고 공개 상태만 되돌립니다.
+        <div style="margin-top:8px"><button type="button" class="aic-btn" id="cmsGalleryRepublish">숨겨진 현장 다시 공개하기</button></div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin:0 0 12px">
         ${cmsPhotoAllCategories().map(c=>`<button type="button" class="aic-btn cmsCatChip" data-for="upload" data-input="cmsGalleryCategory" data-val="${esc(c)}"
