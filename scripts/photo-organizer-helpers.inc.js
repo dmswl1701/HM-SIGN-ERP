@@ -351,6 +351,36 @@ async function cmsGalleryAddFiles(id,fileList){
    ⚠ 제목·분류는 사진이 아니라 그 사진이 속한 묶음의 것이다. 한 묶음에 사진이 여럿이면
      한 장에서 고친 제목이 같은 묶음의 다른 사진에도 그대로 걸린다 — 편집칸에 그렇게 적어 둔다. */
 let cmsPhotoEdit=null;   // {pid, aid}
+let cmsPhotoFilter='';   // '' = 전체 · '__none__' = 분류 없음 · 그 밖에는 분류 이름
+
+/* 분류 고르기에 항상 띄워 둘 기본값. 아직 아무 분류도 안 만들었을 때
+   빈 화면만 보여주면 무엇을 적어야 하는지 알 수가 없다. 실제로 쓰는 업종을 미리 깔아 둔다.
+   이미 만든 분류가 있으면 그것들이 앞에 오고, 여기 값은 뒤에 붙는다(중복은 걸러진다). */
+const CMS_CATEGORY_SUGGEST=['셀프빨래방','베이커리','카페','음식점','미용실','병원','학원','기타'];
+
+function cmsPhotoAllCategories(){
+  const out=[];
+  cmsGalleryCategories().forEach(c=>{ if(c && out.indexOf(c)<0) out.push(c); });
+  CMS_CATEGORY_SUGGEST.forEach(c=>{ if(out.indexOf(c)<0) out.push(c); });
+  return out;
+}
+function cmsPhotoSetFilter(v){ cmsPhotoFilter=v; cmsPhotoEdit=null; render(); }
+/* 분류 칩을 누르면 옆 입력칸을 채운다. 저장은 [저장] 버튼이 한다.
+   ⚠ 여기서 render() 를 부르면 안 된다 — 화면을 다시 그리면 옆에 적던 현장 이름이 날아간다.
+     그래서 입력값만 바꾸고 칩 표시는 직접 손본다. */
+function cmsPhotoPickCategory(inputId,value,group){
+  const el=document.getElementById(inputId);
+  if(!el) return;
+  const next=(el.value.trim()===value)?'':value;   // 같은 걸 또 누르면 해제
+  el.value=next;
+  document.querySelectorAll('.cmsCatChip[data-for="'+group+'"]').forEach(b=>{
+    const on=(b.dataset.val===next);
+    b.style.background=on?'var(--navy)':'';
+    b.style.color=on?'#fff':'';
+    b.style.borderColor=on?'var(--navy)':'';
+    b.style.fontWeight=on?'700':'';
+  });
+}
 
 /* 모든 묶음의 사진을 한 줄로 편다. 묶음 순서(최근 수정 순)를 유지하고, 묶음 안에서는 정렬 순서대로. */
 function cmsPhotoFlat(){
@@ -398,7 +428,27 @@ function cmsRenderPhotoGallery(){
   const picks=cmsMergePicked();
   const pickPhotos=picks.reduce((s,p)=>s+((cmsAssets[p.id]||[]).length),0);
   const pickOver=pickPhotos>CMS_ALBUM_MAX;
-  const flat=cmsPhotoFlat();
+  const flatAll=cmsPhotoFlat();
+  /* 분류별로 나눠 보기. 사진이 수십 장이면 한 판이 오히려 넓어서, 보고 싶은 업종만 남긴다. */
+  const usedCats=[];
+  flatAll.forEach(x=>{ const c=cmsGalleryCategoryOf(x.album); if(c && usedCats.indexOf(c)<0) usedCats.push(c); });
+  const noneCount=flatAll.filter(x=>!cmsGalleryCategoryOf(x.album)).length;
+  const flat=flatAll.filter(x=>{
+    const c=cmsGalleryCategoryOf(x.album);
+    if(cmsPhotoFilter==='') return true;
+    if(cmsPhotoFilter==='__none__') return !c;
+    return c===cmsPhotoFilter;
+  });
+  const filterBar=(usedCats.length||noneCount)?`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px">
+      ${[{v:'',t:'전체 '+flatAll.length}]
+        .concat(usedCats.map(c=>({v:c,t:c+' '+flatAll.filter(x=>cmsGalleryCategoryOf(x.album)===c).length})))
+        .concat(noneCount?[{v:'__none__',t:'분류 없음 '+noneCount}]:[])
+        .map(o=>{ const on=(cmsPhotoFilter===o.v);
+          return `<button type="button" class="aic-btn cmsPhotoFilterBtn" data-v="${esc(o.v)}"
+            style="${on?'background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700':''}">${esc(o.t)}</button>`;
+        }).join('')}
+    </div>`:'';
 
   /* 사진 한 장 = 칸 하나. 누르면 아래 편집 패널이 열린다.
      왼쪽 위 네모는 "합치기" 고르기용이고, 사진이 속한 묶음을 고른다. */
@@ -449,7 +499,14 @@ function cmsRenderPhotoGallery(){
             </div>
             <div class="field" style="margin:0 0 8px">
               <label>분류</label>
-              <input type="text" id="cmsPhotoCategory" list="cmsGalleryCategoryList" maxlength="100" value="${esc(cmsGalleryCategoryOf(p))}" placeholder="예: 셀프빨래방">
+              <input type="text" id="cmsPhotoCategory" list="cmsGalleryCategoryList" maxlength="100" value="${esc(cmsGalleryCategoryOf(p))}" placeholder="아래에서 고르거나 직접 입력">
+              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+                ${cmsPhotoAllCategories().map(c=>{
+                  const on=(cmsGalleryCategoryOf(p)===c);
+                  return `<button type="button" class="aic-btn cmsCatChip" data-for="edit" data-input="cmsPhotoCategory" data-val="${esc(c)}"
+                    style="padding:4px 9px;font-size:12px${on?';background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700':''}">${esc(c)}</button>`;
+                }).join('')}
+              </div>
             </div>
             ${a?`<label style="display:block;font-size:12px;color:var(--text-mute);margin-bottom:5px">이 사진은</label>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
@@ -487,9 +544,13 @@ function cmsRenderPhotoGallery(){
         </div>
         <div class="field" style="margin:0">
           <label>분류 <span style="font-weight:400;color:var(--text-mute)">(선택)</span></label>
-          <input type="text" id="cmsGalleryCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="예: 셀프빨래방">
+          <input type="text" id="cmsGalleryCategory" list="cmsGalleryCategoryList" maxlength="100" placeholder="아래에서 고르거나 직접 입력">
         </div>
         <button type="button" class="aic-btn" id="cmsGalleryNewCategory">＋ 새 분류</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin:0 0 12px">
+        ${cmsPhotoAllCategories().map(c=>`<button type="button" class="aic-btn cmsCatChip" data-for="upload" data-input="cmsGalleryCategory" data-val="${esc(c)}"
+          style="padding:4px 9px;font-size:12px">${esc(c)}</button>`).join('')}
       </div>
       ${cats.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px">${cats.map(c=>`
         <span style="display:inline-flex;align-items:center;gap:3px;border:1px solid var(--border);border-radius:999px;padding:5px 7px 5px 10px;background:#fff;font-size:12px">
@@ -508,9 +569,10 @@ function cmsRenderPhotoGallery(){
       </div>`:''}
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0 10px">
-      <h2 style="margin:0">사진 (${flat.length})</h2>
+      <h2 style="margin:0">사진 (${flat.length}${cmsPhotoFilter?' / 전체 '+flatAll.length:''})</h2>
       <span class="aic-sub">사진을 눌러 이름·분류·전후를 정하세요 · 네모를 고르면 한 현장으로 합칩니다</span>
     </div>
+    ${filterBar}
     ${M&&M.running?`
       <div class="panel" style="position:sticky;top:0;z-index:6;border-color:var(--navy)">
         <b style="color:var(--navy)">「${esc(M.label)}」로 합치는 중…</b>
@@ -537,6 +599,8 @@ function cmsRenderPhotoGallery(){
     ${editPanel}
     ${flat.length
       ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px">${tiles}</div>`
-      : '<div class="panel"><div class="empty">아직 사진이 없어요. 위에서 사진을 여러 장 골라 올려 주세요.</div></div>'}
+      : (cmsPhotoFilter
+          ? '<div class="panel"><div class="empty">이 분류에는 사진이 없어요. 위에서 <b>전체</b>를 눌러 보세요.</div></div>'
+          : '<div class="panel"><div class="empty">아직 사진이 없어요. 위에서 사진을 여러 장 골라 올려 주세요.</div></div>')}
   `;
 }
