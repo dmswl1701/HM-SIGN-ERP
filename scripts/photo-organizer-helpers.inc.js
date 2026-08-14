@@ -383,6 +383,30 @@ async function cmsGalleryAddFiles(id,fileList){
 let cmsPhotoEdit=null;   // {pid, aid}
 let cmsPhotoFilter='';   // '' = 전체 · '__none__' = 분류 없음 · 그 밖에는 분류 이름
 
+/* 고르기 모드.
+   ⚠ 작은 네모만 눌러 고르게 하면 폰에서 손가락으로 맞히기 어렵고, 16장을 고르려면 16번을
+     정확히 찍어야 한다. 대표가 답답하다고 한 지점이 이것이다.
+   켜면 사진 어디를 눌러도 골라진다. 끄면 눌러서 편집한다 — 한 동작에 한 가지 뜻만 갖게 한다. */
+let cmsPhotoSelectMode=false;
+function cmsPhotoToggleSelectMode(){
+  cmsPhotoSelectMode=!cmsPhotoSelectMode;
+  cmsPhotoEdit=null;                       // 고르는 중에 편집칸이 열려 있으면 헷갈린다
+  if(!cmsPhotoSelectMode) cmsMergePick={}; // 고르기를 끄면 고른 것도 비운다
+  render();
+}
+function cmsPhotoTogglePick(id){
+  if(cmsMergePick[id]) delete cmsMergePick[id]; else cmsMergePick[id]=true;
+  render();
+}
+/* 지금 화면에 보이는 것(분류 걸러진 결과) 전부 고르기 — 72장을 하나씩 찍지 않아도 되게. */
+function cmsPhotoPickAllVisible(ids){
+  const list=ids||[];
+  const allOn=list.length && list.every(id=>cmsMergePick[id]);
+  if(allOn) list.forEach(id=>{ delete cmsMergePick[id]; });
+  else list.forEach(id=>{ cmsMergePick[id]=true; });
+  render();
+}
+
 /* 분류 고르기에 항상 띄워 둘 기본값. 아직 아무 분류도 안 만들었을 때
    빈 화면만 보여주면 무엇을 적어야 하는지 알 수가 없다. 실제로 쓰는 업종을 미리 깔아 둔다.
    이미 만든 분류가 있으면 그것들이 앞에 오고, 여기 값은 뒤에 붙는다(중복은 걸러진다). */
@@ -491,11 +515,13 @@ function cmsRenderPhotoGallery(){
     const name=String(p.title||'').trim();
     const unnamed=(!name||name==='시공사진');
     return `<div style="position:relative;border:1px solid ${open?'var(--navy)':'var(--border)'};border-width:${open?'2px':'1px'};border-radius:10px;overflow:hidden;background:#fff${picked?';outline:2px solid var(--navy);outline-offset:-2px':''}">
-      <label style="position:absolute;z-index:2;left:6px;top:6px;width:26px;height:26px;display:grid;place-items:center;background:rgba(255,255,255,.92);border-radius:7px;cursor:pointer" title="합치려면 고르세요">
+      ${cmsPhotoSelectMode
+        ? `<span style="position:absolute;z-index:2;left:6px;top:6px;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;font-size:16px;font-weight:800;background:${picked?'var(--navy)':'rgba(255,255,255,.92)'};color:${picked?'#fff':'var(--text-mute)'};border:1px solid ${picked?'var(--navy)':'var(--border)'}">${picked?'✓':''}</span>`
+        : `<label style="position:absolute;z-index:2;left:6px;top:6px;width:26px;height:26px;display:grid;place-items:center;background:rgba(255,255,255,.92);border-radius:7px;cursor:pointer" title="합치려면 고르세요">
         <input type="checkbox" class="cmsAlbumPick" data-id="${esc(p.id)}" ${picked?'checked':''} style="width:16px;height:16px;margin:0">
-      </label>
+      </label>`}
       ${marked?`<span style="position:absolute;z-index:2;right:6px;top:6px;background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:6px;padding:3px 6px">${esc(cmsPhotoRoleLabel(role))}</span>`:''}
-      <button type="button" class="cmsPhotoOpen" data-pid="${esc(p.id)}" data-aid="${a?esc(a.id):''}"
+      <button type="button" class="${cmsPhotoSelectMode?'cmsPhotoPickTile':'cmsPhotoOpen'}" data-pid="${esc(p.id)}" data-id="${esc(p.id)}" data-aid="${a?esc(a.id):''}"
         style="display:block;width:100%;padding:0;border:0;background:#eef1f5;cursor:pointer;aspect-ratio:1">
         ${a?`<img src="${esc(item.src)}" alt="${esc(name||'시공사진')}" style="width:100%;height:100%;object-fit:cover;display:block">`
            :`<span style="display:grid;place-items:center;width:100%;height:100%;color:var(--text-mute);font-size:11.5px;line-height:1.5;padding:8px;text-align:center">사진 불러오는 중<br>또는 사진 없음</span>`}
@@ -600,7 +626,13 @@ function cmsRenderPhotoGallery(){
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0 10px">
       <h2 style="margin:0">사진 (${flat.length}${cmsPhotoFilter?' / 전체 '+flatAll.length:''})</h2>
-      <span class="aic-sub">사진을 눌러 이름·분류·전후를 정하세요 · 네모를 고르면 한 현장으로 합칩니다</span>
+      <span class="aic-sub">${cmsPhotoSelectMode?'사진을 눌러 고르세요 · 다 고른 뒤 위에서 이름을 바꾸거나 합칩니다':'사진을 눌러 이름·분류·전후를 정하세요'}</span>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin:0 0 10px">
+      <button type="button" class="aic-btn" id="cmsPhotoSelectModeBtn"
+        style="${cmsPhotoSelectMode?'background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700':''}">
+        ${cmsPhotoSelectMode?'✓ 고르는 중 · 끝내기':'☑ 여러 장 고르기'}</button>
+      ${cmsPhotoSelectMode?`<button type="button" class="aic-btn" id="cmsPhotoPickAll">보이는 ${flat.length}장 전부 고르기</button>`:''}
     </div>
     ${filterBar}
     ${M&&M.running?`

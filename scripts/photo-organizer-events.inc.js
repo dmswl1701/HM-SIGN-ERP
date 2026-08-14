@@ -5,6 +5,15 @@
   document.querySelectorAll('.cmsAlbumAddInput').forEach(el=>el.addEventListener('change',e=>{
     const f=[...e.target.files]; e.target.value=''; cmsGalleryAddFiles(el.dataset.id,f);
   }));
+  const psm=document.getElementById('cmsPhotoSelectModeBtn');
+  if(psm) psm.addEventListener('click',cmsPhotoToggleSelectMode);
+  const ppa=document.getElementById('cmsPhotoPickAll');
+  if(ppa) ppa.addEventListener('click',()=>{
+    const ids=[];
+    document.querySelectorAll('.cmsPhotoPickTile').forEach(t=>{ if(ids.indexOf(t.dataset.id)<0) ids.push(t.dataset.id); });
+    cmsPhotoPickAllVisible(ids);
+  });
+  document.querySelectorAll('.cmsPhotoPickTile').forEach(el=>el.addEventListener('click',()=>cmsPhotoTogglePick(el.dataset.id)));
   document.querySelectorAll('.cmsPhotoFilterBtn').forEach(el=>el.addEventListener('click',()=>cmsPhotoSetFilter(el.dataset.v)));
   document.querySelectorAll('.cmsCatChip').forEach(el=>el.addEventListener('click',()=>cmsPhotoPickCategory(el.dataset.input, el.dataset.val, el.dataset.for)));
   document.querySelectorAll('.cmsPhotoOpen').forEach(el=>el.addEventListener('click',()=>cmsPhotoOpen(el.dataset.pid, el.dataset.aid)));
