@@ -7338,6 +7338,28 @@ function cmsQueueUpdateDom(portfolioId){
   });
 }
 
+// ===== 사진 축소 화질 =====
+// 한 번에 크게 줄이면(폰 원본 4032px → 640px) 원본 픽셀 대부분을 건너뛰어
+// 간판 글씨·LED 테두리·외벽 줄눈이 계단처럼 깨진다.
+// 절반씩 나눠 줄이고 매 단계 고품질 보간을 쓰면 면적 평균에 가깝게 줄어든다.
+// 실측(2026-09-19): 면적 평균 대비 오차 — 실제 시공사진 2000→640 56% 감소, 폰 원본 4032→640 64% 감소.
+// 중간 캔버스는 쓰고 나면 바로 비운다 (폰에서 3장 동시 변환 시 메모리 부담 방지).
+function cmsDrawDownscaled(ctx,img,w,h){
+  let src=img, sw=img.naturalWidth||img.width, sh=img.naturalHeight||img.height;
+  while(sw/2>=w && sh/2>=h){
+    const step=document.createElement('canvas');
+    step.width=Math.round(sw/2); step.height=Math.round(sh/2);
+    const sctx=step.getContext('2d');
+    sctx.imageSmoothingEnabled=true; sctx.imageSmoothingQuality='high';
+    sctx.drawImage(src,0,0,step.width,step.height);
+    if(src!==img){ src.width=0; src.height=0; }
+    src=step; sw=step.width; sh=step.height;
+  }
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.drawImage(src,0,0,w,h);
+  if(src!==img){ src.width=0; src.height=0; }
+}
+
 async function cmsImageToWebp(file,maxEdge,quality,suffix,maxBytes){
   const url=URL.createObjectURL(file);
   try{
@@ -7355,7 +7377,7 @@ async function cmsImageToWebp(file,maxEdge,quality,suffix,maxBytes){
     canvas.height=Math.max(1,Math.round(h*scale));
     const ctx=canvas.getContext('2d',{alpha:true});
     if(!ctx) throw new Error('이미지 변환 기능을 사용할 수 없습니다');
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    cmsDrawDownscaled(ctx,img,canvas.width,canvas.height);
     let q=quality, blob=null;
     for(let attempt=0;attempt<4;attempt++){
       blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',q));
